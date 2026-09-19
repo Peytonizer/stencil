@@ -89,10 +89,16 @@ body {
   align-items: start;
 }
 
+/* `minmax(0, …)`, not a bare `1fr`: a grid track won't shrink below its content's natural width
+   otherwise, and a file input's natural width is wider than a phone. */
 @media (width < 900px) {
   .work {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.work > * {
+  min-width: 0;
 }
 
 .panel {
@@ -261,6 +267,10 @@ button:focus-visible {
   color: var(--ink-faint);
 }
 
+.colophon p {
+  margin: 0 0 4px;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -334,7 +344,10 @@ button:focus-visible {
   margin-bottom: 16px;
 }
 
+/* A fieldset's default `min-width: min-content` would make the card as wide as the file input's
+   natural width and push it past the panel's edge. */
 .group-item {
+  min-width: 0;
   margin: 0 0 12px;
   padding: 14px 14px 6px;
   border: 1px solid var(--border-strong);

@@ -20,3 +20,6 @@
   every required field is filled. Every image is redrawn through a canvas, which downscales it
   and bakes in any phone-photo rotation.
 - Deploy workflow: lint, tests and build run before every push to main is published to GitHub Pages.
+- Footer states that the page makes no network requests, as the other strata tools do. Fixed the
+  rule card and its inputs running past the form panel's edge: a fieldset and a grid column won't
+  shrink below their content's natural width unless told to.
