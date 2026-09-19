@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>stencil — strata notices</title>
+    <meta
+      name="description"
+      content="Pick a strata notice, fill in the fields and download the finished PDF. Entirely in your browser — nothing is uploaded."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b33a5f'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <h1 class="wordmark"><a href="#">stencil<span class="dot">.</span></a></h1>
+        <p class="tagline">
+          Pick a strata notice, answer the fields it asks for, and take away the finished PDF.
+        </p>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">
+          <span class="visually-hidden">Switch between the light and dark palette</span>
+          <span data-theme-label>Light</span>
+        </button>
+        <p class="privacy-line">
+          What you type and any image you add stay in this tab. Nothing is uploaded.
+        </p>
+      </header>
+
+      <main>
+        <!-- The list of templates. Shown when the URL hash names no template. -->
+        <section class="picker" data-view="picker" aria-label="Choose a notice">
+          <ul class="cards" data-picker></ul>
+          <noscript>This tool builds the notice in your browser, so it needs JavaScript.</noscript>
+        </section>
+
+        <!-- One template's form and its live preview. Shown when the hash names a template. -->
+        <div class="work" data-view="form" hidden>
+          <form class="panel details" data-form novalidate></form>
+          <section class="panel preview" aria-label="Preview of the notice">
+            <iframe title="The notice as it will download" data-preview></iframe>
+          </section>
+        </div>
+      </main>
+
+      <footer class="colophon">
+        <p>
+          Not legal advice. Check any notice before you send it.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
