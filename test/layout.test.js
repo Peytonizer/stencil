@@ -258,7 +258,7 @@ describe('the letterhead', () => {
       fonts,
     );
     const without = layoutBlocks([lines(1)], fonts);
-    const [image] = withLetterhead[0].ops.filter((op) => op.op === 'image');
+    const image = withLetterhead[0].ops.find((op) => op.op === 'image');
     expect(image.x).toBe(LETTERHEAD.x);
     expect(image.y + image.height).toBeCloseTo(LETTERHEAD.top, 6);
     expect(image.y).toBeGreaterThanOrEqual(LETTERHEAD.bottom - 0.01);
