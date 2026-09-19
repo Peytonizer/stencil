@@ -415,8 +415,9 @@ function scheduleA(values) {
     }),
     blank,
   ];
+  // Each rule ends with its own blank line, so however many rules and images there are, clause 2
+  // follows after exactly one.
   for (const [index, rule] of (values.rules ?? []).entries()) blocks.push(...ruleBlocks(rule, index));
-  blocks.push(blank);
 
   blocks.push(
     scheduleClause(

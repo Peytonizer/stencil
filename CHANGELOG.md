@@ -13,3 +13,4 @@
 - Rule Infringement Notice template: fields, `build()` and `missingFields()`, with the source's
   wording reproduced exactly (the source's management firm's name becomes "the Managing Agent"). Every conditional
   has a test, and so does every required field's placeholder.
+- One blank line before Schedule A clause 2, however many rules and images precede it.

@@ -249,6 +249,30 @@ describe('rules', () => {
   });
 });
 
+describe('the space before Schedule A clause 2', () => {
+  const blanksBeforeClause2 = (extra) => {
+    const blocks = flat(build(extra));
+    const at = blocks.findIndex((block) => block.marker === '2.' && block.markerX === 0);
+    let count = 0;
+    while (blocks[at - 1 - count]?.type === 'blank') count++;
+    return count;
+  };
+
+  it('is one blank line, with or without an image, and however many rules there are', () => {
+    const image = fakeImage(300, 100);
+    expect(blanksBeforeClause2()).toBe(1);
+    expect(blanksBeforeClause2({ rules: [rule({ image })] })).toBe(1);
+    expect(blanksBeforeClause2({ rules: [rule(), rule({ image }), rule()] })).toBe(1);
+  });
+
+  it('keeps one blank line between one rule and the next', () => {
+    const blocks = flat(build({ rules: [rule(), rule()] }));
+    const second = blocks.findIndex((block) => block.marker === 'b)');
+    expect(blocks[second - 1]).toEqual({ type: 'blank' });
+    expect(blocks[second - 2].type).toBe('para');
+  });
+});
+
 describe("Schedule A's remedies and closing requests", () => {
   it('lists the four standard remedies as a. b. c. d.', () => {
     const remedies = flat(build()).filter((block) => block.type === 'item' && block.markerX === 36 && /^[a-d]\.$/.test(block.marker));
