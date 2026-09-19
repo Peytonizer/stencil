@@ -19,3 +19,4 @@
   a live preview rebuilt 300 ms after the last change, and a download that stays disabled until
   every required field is filled. Every image is redrawn through a canvas, which downscales it
   and bakes in any phone-photo rotation.
+- Deploy workflow: lint, tests and build run before every push to main is published to GitHub Pages.
