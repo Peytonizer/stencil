@@ -13,7 +13,15 @@ export async function loadFonts() {
 
 export const text = (t, style = {}) => ({ text: t, ...style });
 export const para = (runs, extra = {}) => ({ type: 'para', runs, x: 0, align: 'left', size: 12, ...extra });
+/** An image for layout tests, which only need its size. It can't be embedded in a PDF. */
 export const fakeImage = (width, height) => ({ bytes: new Uint8Array(), type: 'png', width, height });
+
+/** A 1×1 red PNG that pdf-lib can really embed, declared at whatever size a test wants. */
+const PIXEL = Uint8Array.from(
+  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=='),
+  (c) => c.charCodeAt(0),
+);
+export const realImage = (width, height) => ({ bytes: PIXEL, type: 'png', width, height });
 
 /** A paragraph long enough to wrap onto several lines at the full measure. */
 export const LOREM =

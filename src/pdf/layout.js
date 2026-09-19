@@ -15,7 +15,7 @@
     blank   one empty line
     image   { image, x, border, maxWidth, maxHeight }
     keep    { blocks } — never split across pages
-    letterhead { image } — page 1's top band, outside the flow
+    letterhead { image } or { placeholder } — the header band of every page, outside the flow
 */
 
 import { justifyExtra, fontKey, runColour, wrapRuns } from './flow.js';
@@ -25,6 +25,7 @@ import {
   IMAGE_MAX_HEIGHT,
   LETTERHEAD,
   MEASURE,
+  MISSING_COLOUR,
   SIZE,
   leading,
 } from './geometry.js';
@@ -84,15 +85,37 @@ function prepare(block, fonts) {
       return { block, kind: 'keep', items, height, firstHeight: height };
     }
     case 'letterhead': {
+      // Drawn on every page's header band, so it takes no room in the flow (height 0).
+      if (!block.image) {
+        // No letterhead yet: a red placeholder stands in for it in the preview.
+        return {
+          block,
+          kind: 'letterhead',
+          op: {
+            op: 'text',
+            text: block.placeholder,
+            x: LETTERHEAD.x,
+            y: LETTERHEAD.top - BASELINE_DROP * SIZE.body,
+            width: fonts.regular.widthOfTextAtSize(block.placeholder, SIZE.body),
+            font: 'regular',
+            size: SIZE.body,
+            color: MISSING_COLOUR,
+          },
+        };
+      }
       const box = fitImage(block.image, LETTERHEAD.width, LETTERHEAD.top - LETTERHEAD.bottom);
-      // It takes no room in the flow (height 0) but has a size of its own to draw at.
       return {
         block,
         kind: 'letterhead',
-        drawWidth: box.width,
-        drawHeight: box.height,
-        height: 0,
-        firstHeight: 0,
+        op: {
+          op: 'image',
+          image: block.image,
+          x: LETTERHEAD.x,
+          y: LETTERHEAD.top - box.height,
+          width: box.width,
+          height: box.height,
+          border: false,
+        },
       };
     }
     default:
@@ -101,7 +124,9 @@ function prepare(block, fonts) {
 }
 
 export function layoutBlocks(blocks, fonts) {
-  const items = blocks.map((block) => prepare(block, fonts));
+  const prepared = blocks.map((block) => prepare(block, fonts));
+  const letterhead = prepared.find((item) => item.kind === 'letterhead');
+  const items = prepared.filter((item) => item.kind !== 'letterhead');
   const pages = [];
   let page;
   let y;
@@ -110,6 +135,8 @@ export function layoutBlocks(blocks, fonts) {
     page = { ops: [] };
     pages.push(page);
     y = CONTENT.top;
+    // The letterhead is every page's header, drawn in the top margin above the text.
+    if (letterhead) page.ops.push({ ...letterhead.op });
   };
   const atTop = () => y >= CONTENT.top - EPSILON;
   const room = () => y - CONTENT.bottom;
@@ -204,19 +231,6 @@ export function layoutBlocks(blocks, fonts) {
         if (item.height > room() + EPSILON && item.height <= CONTENT_HEIGHT) breakPage();
         for (let i = 0; i < item.items.length; i++) place(item.items, i);
         break;
-      case 'letterhead': {
-        // Drawn in the top margin of page 1, outside the flow, so it takes no room from the text.
-        pages[0].ops.push({
-          op: 'image',
-          image: item.block.image,
-          x: LETTERHEAD.x,
-          y: LETTERHEAD.top - item.drawHeight,
-          width: item.drawWidth,
-          height: item.drawHeight,
-          border: false,
-        });
-        break;
-      }
     }
   }
 

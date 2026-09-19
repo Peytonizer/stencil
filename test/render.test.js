@@ -2,13 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import { buildPdf } from '../src/pdf/render.js';
-import { para, text } from './helpers.js';
-
-// A 1×1 red PNG.
-const PNG = Uint8Array.from(
-  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=='),
-  (c) => c.charCodeAt(0),
-);
+import { para, realImage, text } from './helpers.js';
 
 const template = (blocks) => ({ name: 'Test notice', build: () => blocks });
 
@@ -23,9 +17,9 @@ describe('buildPdf', () => {
   });
 
   it('embeds an image and its border', async () => {
-    const image = { bytes: PNG, type: 'png', width: 1, height: 1 };
+    const image = realImage(1, 1);
     const bytes = await buildPdf(
-      template([{ type: 'image', image, x: 0, border: true }, { type: 'letterhead', image }]),
+      template([{ type: 'image', image, x: 0, border: true }, { type: 'letterhead', image }, para([text('x')])]),
       {},
     );
     const doc = await PDFDocument.load(bytes);

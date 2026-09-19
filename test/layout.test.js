@@ -261,14 +261,16 @@ describe('images', () => {
   });
 });
 
+const images = (page) => page.ops.filter((op) => op.op === 'image');
+
 describe('the letterhead', () => {
-  it('sits in the top band of page 1 without taking room from the text', () => {
+  it('sits in the header band without taking room from the text', () => {
     const withLetterhead = layoutBlocks(
       [{ type: 'letterhead', image: fakeImage(900, 90) }, lines(1)],
       fonts,
     );
     const without = layoutBlocks([lines(1)], fonts);
-    const image = withLetterhead[0].ops.find((op) => op.op === 'image');
+    const [image] = images(withLetterhead[0]);
     expect(image.x).toBe(LETTERHEAD.x);
     expect(image.y + image.height).toBeCloseTo(LETTERHEAD.top, 6);
     expect(image.y).toBeGreaterThanOrEqual(LETTERHEAD.bottom - 0.01);
@@ -276,13 +278,48 @@ describe('the letterhead', () => {
     expect(texts(withLetterhead[0])[0].y).toBeCloseTo(texts(without[0])[0].y, 6);
   });
 
-  it('is scaled down to the band and appears on page 1 only', () => {
+  it('is scaled down to the band', () => {
+    const [page] = layoutBlocks([{ type: 'letterhead', image: fakeImage(300, 300) }, lines(1)], fonts);
+    expect(images(page)[0].height).toBeCloseTo(LETTERHEAD.top - LETTERHEAD.bottom, 6);
+  });
+
+  it('is the header of every page, in the same place', () => {
+    const image = fakeImage(900, 90);
     const pages = layoutBlocks(
-      [{ type: 'letterhead', image: fakeImage(300, 300) }, lines(LINES_PER_PAGE + 1)],
+      [{ type: 'letterhead', image }, lines(LINES_PER_PAGE * 2 + 1)],
       fonts,
     );
-    expect(pages[0].ops.find((op) => op.op === 'image').height).toBeCloseTo(LETTERHEAD.top - LETTERHEAD.bottom, 6);
-    expect(pages[1].ops.filter((op) => op.op === 'image')).toHaveLength(0);
+    expect(pages).toHaveLength(3);
+    const placed = pages.map((page) => images(page));
+    for (const list of placed) expect(list).toHaveLength(1);
+    const [first, ...rest] = placed.map(([op]) => op);
+    for (const op of rest) expect(op).toEqual(first);
+    for (const op of placed.flat()) expect(op.image).toBe(image);
+  });
+
+  it('leaves the text where it would be without a letterhead, on every page', () => {
+    const withLetterhead = layoutBlocks(
+      [{ type: 'letterhead', image: fakeImage(900, 90) }, lines(LINES_PER_PAGE + 3)],
+      fonts,
+    );
+    const without = layoutBlocks([lines(LINES_PER_PAGE + 3)], fonts);
+    for (const [index, page] of withLetterhead.entries()) {
+      expect(texts(page).map((op) => op.y)).toEqual(texts(without[index]).map((op) => op.y));
+    }
+  });
+
+  it('shows a red placeholder in the band on every page while it is missing', () => {
+    const pages = layoutBlocks(
+      [{ type: 'letterhead', placeholder: '[Letterhead]' }, lines(LINES_PER_PAGE + 1)],
+      fonts,
+    );
+    expect(pages).toHaveLength(2);
+    for (const page of pages) {
+      const [placeholder] = texts(page);
+      expect(placeholder).toMatchObject({ text: '[Letterhead]', color: { r: 0.8, g: 0, b: 0 } });
+      expect(placeholder.y).toBeGreaterThan(LETTERHEAD.bottom);
+      expect(placeholder.y).toBeLessThan(LETTERHEAD.top);
+    }
   });
 });
 

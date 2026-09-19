@@ -67,8 +67,9 @@ const FIELDS = [
     label: 'Letterhead',
     type: 'image',
     section: 'letter',
-    required: false,
-    help: 'Printed across the top of page 1.',
+    required: true,
+    placeholder: '[Letterhead]',
+    help: 'Printed across the top of every page.',
   },
   {
     id: 'ownerName',
@@ -490,7 +491,9 @@ export const infringementNotice = {
 
   build(values) {
     return [
-      ...(values.letterhead ? [{ type: 'letterhead', image: values.letterhead }] : []),
+      values.letterhead
+        ? { type: 'letterhead', image: values.letterhead }
+        : { type: 'letterhead', placeholder: FIELD_BY_ID.get('letterhead').placeholder },
       ...addressBlock(values),
       para([bold('RULE INFRINGEMENT NOTICE')]),
       para([bold('Pursuant to Section 109 of the Unit Titles (Management) Act 2011')]),

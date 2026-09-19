@@ -23,3 +23,5 @@
 - Footer states that the page makes no network requests, as the other strata tools do. Fixed the
   rule card and its inputs running past the form panel's edge: a fieldset and a grid column won't
   shrink below their content's natural width unless told to.
+- The letterhead is now required, and is the header of every page rather than page 1 only. While
+  it is missing the preview shows a red `[Letterhead]` in the band and download stays disabled.

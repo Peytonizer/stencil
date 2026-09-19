@@ -5,7 +5,7 @@ import { addDays, todayInCanberra } from '../src/format.js';
 import { buildPdf } from '../src/pdf/render.js';
 import { TEMPLATES, defaultValues, getTemplate, missingFields } from '../src/templates/index.js';
 import { infringementNotice as template } from '../src/templates/infringement-notice.js';
-import { fakeImage } from './helpers.js';
+import { fakeImage, realImage } from './helpers.js';
 
 const rule = (extra = {}) => ({
   ruleNumber: 'Rule 12',
@@ -36,17 +36,26 @@ const full = (extra = {}) => ({
   additionalRequests: '',
   strataManagerName: 'Sam Example',
   seal: null,
-  letterhead: null,
+  letterhead: fakeImage(900, 90),
   ...extra,
 });
 
-const flat = (blocks) => blocks.flatMap((block) => (block.type === 'keep' ? block.blocks : [block]));
+/** The flowing blocks, with keep groups opened out. The letterhead is a header, not part of the flow. */
+const flat = (blocks) =>
+  blocks
+    .filter((block) => block.type !== 'letterhead')
+    .flatMap((block) => (block.type === 'keep' ? block.blocks : [block]));
 const build = (extra) => template.build(full(extra));
 const textOf = (block) => (block.runs ?? []).map((run) => run.text).join('');
 /** The text of every paragraph and item, in order; a blank is ''. */
 const texts = (blocks) => flat(blocks).map((block) => (block.type === 'blank' ? '' : textOf(block)));
-const missingRuns = (blocks) =>
-  flat(blocks).flatMap((block) => (block.runs ?? []).filter((run) => run.missing));
+const missingRuns = (blocks) => [
+  ...flat(blocks).flatMap((block) => (block.runs ?? []).filter((run) => run.missing)),
+  // A missing letterhead shows as a red placeholder in the header band.
+  ...blocks
+    .filter((block) => block.type === 'letterhead' && block.placeholder)
+    .map((block) => ({ text: block.placeholder, missing: true })),
+];
 
 describe('the wording', () => {
   // Copied from SPEC.md's block listing, which is the source's wording, quirks included.
@@ -148,10 +157,10 @@ describe('the letter heading', () => {
     expect(lines.join('\n')).not.toContain('pm@example.com');
   });
 
-  it('puts the letterhead first when there is one', () => {
+  it('starts with the letterhead, or a red placeholder for it while it is missing', () => {
     const image = fakeImage(100, 20);
     expect(build({ letterhead: image })[0]).toEqual({ type: 'letterhead', image });
-    expect(build()[0].type).not.toBe('letterhead');
+    expect(build({ letterhead: null })[0]).toEqual({ type: 'letterhead', placeholder: '[Letterhead]' });
   });
 });
 
@@ -373,8 +382,12 @@ describe('missingFields', () => {
     expect(missingFields(template, full({ rules: [] }))).toEqual(['rules']);
   });
 
-  it('does not require the seal, the letterhead, or any optional line', () => {
-    expect(missingFields(template, full({ seal: null, letterhead: null, careOf: '', buildingName: '' }))).toEqual([]);
+  it('does not require the seal or any optional line', () => {
+    expect(missingFields(template, full({ seal: null, careOf: '', buildingName: '' }))).toEqual([]);
+  });
+
+  it('requires the letterhead, so no notice can go out without one', () => {
+    expect(missingFields(template, full({ letterhead: null }))).toEqual(['letterhead']);
   });
 
   it('flags a missing date', () => {
@@ -423,12 +436,15 @@ describe('the definition', () => {
 
 describe('the PDF', () => {
   it('builds for a complete notice, a blank form, and the most rules allowed', async () => {
+    const letterhead = realImage(900, 90);
     const cases = [
-      full(),
+      full({ letterhead }),
       defaultValues(template),
-      full({ rules: Array.from({ length: 10 }, () => rule({ image: null })) }),
+      full({ letterhead, rules: Array.from({ length: 10 }, () => rule({ image: null })) }),
     ];
     const docs = await Promise.all(cases.map(async (values) => PDFDocument.load(await buildPdf(template, values))));
     for (const doc of docs) expect(doc.getPageCount()).toBeGreaterThanOrEqual(1);
+    // The letterhead is every page's header, so a multi-page notice carries it on each.
+    expect(docs[2].getPageCount()).toBeGreaterThan(1);
   });
 });
