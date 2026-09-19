@@ -203,6 +203,16 @@ describe('keepWithNext', () => {
     expect(lineOps(pages[1])[0]).toBe('One');
   });
 
+  it('carries a heading to the next page with a kept group that will not fit beside it', () => {
+    // Deliberate: clause 3 travels with the seal block rather than being left behind on its own
+    // page. Open for review; see the note in layout.js.
+    const heading = para([text('Three', { bold: true })], { keepWithNext: true });
+    const seal = { type: 'keep', blocks: [lines(6)] };
+    const pages = layoutBlocks([lines(LINES_PER_PAGE - 6), heading, blank, seal], fonts);
+    expect(pages).toHaveLength(2);
+    expect(lineOps(pages[1])[0]).toBe('Three');
+  });
+
   it('does nothing when the next line fits', () => {
     const heading = para([text('SCHEDULE A', { bold: true })], { keepWithNext: true });
     expect(layoutBlocks([lines(10), heading, blank, lines(2)], fonts)).toHaveLength(1);

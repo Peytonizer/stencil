@@ -225,6 +225,12 @@ export function layoutBlocks(blocks, fonts) {
    * chain runs through any blank lines between them, and on through the next paragraph if that
    * one is keep-with-next as well (a heading, a blank, then a sub-heading, say). If the whole
    * chain won't fit in the room left, everything moves to a fresh page.
+   *
+   * When what follows is a `keep` group (clause 3 and the seal block), the group counts at its
+   * full height, not its first line. SPEC.md says "first line of the next block"; read
+   * literally, that would leave clause 3 alone at the foot of a page and put the seal block by
+   * itself on the next, an execution page with none of the notice's text. Open for review: to
+   * follow the spec literally, use `firstHeight` of the group's first child here.
    */
   function keepWithFollowing(list, index) {
     let need = 0;

@@ -6,11 +6,16 @@
   Two files per template: `<id>.pdf`, filled in with sample values, and `<id>-blank.pdf`, the
   form as a fresh visitor sees it, every missing value showing as its red placeholder.
 
+  Quick Look renders page 1 of a PDF only, so each page of the filled sample is also written as
+  its own file, `<id>-page-N.pdf`, for `qlmanage -t -s 1600 -o .proof .proof/<id>-page-2.pdf`.
+
   The sample values are obviously fake on purpose, and the images are generated here rather
   than read from anywhere: never put a real units plan, owner, seal or letterhead into a file
   this repo can commit. `.proof/` is gitignored.
 */
 import { mkdirSync, writeFileSync } from 'node:fs';
+
+import { PDFDocument } from 'pdf-lib';
 import { crc32, deflateSync } from 'node:zlib';
 
 import { buildPdf } from '../src/pdf/render.js';
@@ -93,6 +98,19 @@ const SAMPLES = {
   }),
 };
 
+/** Each page of a PDF as its own one-page file. */
+async function writePages(name, bytes) {
+  const source = await PDFDocument.load(bytes);
+  await Promise.all(
+    source.getPageIndices().map(async (index) => {
+      const single = await PDFDocument.create();
+      const [page] = await single.copyPages(source, [index]);
+      single.addPage(page);
+      writeFileSync(`.proof/${name}-page-${index + 1}.pdf`, await single.save());
+    }),
+  );
+}
+
 mkdirSync('.proof', { recursive: true });
 if (TEMPLATES.length === 0) console.log('No templates yet.');
 
@@ -103,6 +121,7 @@ const jobs = TEMPLATES.flatMap((template) => {
   return targets.map(async ([name, values]) => {
     const bytes = await buildPdf(template, values);
     writeFileSync(`.proof/${name}.pdf`, bytes);
+    if (name === template.id) await writePages(name, bytes);
     return `.proof/${name}.pdf — ${bytes.length} bytes`;
   });
 });

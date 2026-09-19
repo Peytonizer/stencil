@@ -3,7 +3,10 @@
   function returning layout blocks — never a parsed document. See SPEC.md.
 */
 
-export const TEMPLATES = [];
+import { infringementNotice } from './infringement-notice.js';
+import { isFilled } from './helpers.js';
+
+export const TEMPLATES = [infringementNotice];
 
 export function getTemplate(id) {
   return TEMPLATES.find((template) => template.id === id) ?? null;
@@ -33,4 +36,33 @@ function defaultsFor(fields, seed) {
 /** The values a fresh form starts with. */
 export function defaultValues(template) {
   return defaultsFor(template.fields, {});
+}
+
+const isRequired = (field, values) =>
+  typeof field.required === 'function' ? field.required(values) : Boolean(field.required);
+
+function missingIn(fields, values, prefix, missing) {
+  for (const field of fields) {
+    if (field.showIf && !field.showIf(values)) continue;
+    const path = `${prefix}${field.id}`;
+    if (field.type === 'group') {
+      const items = values[field.id] ?? [];
+      if (isRequired(field, values) && items.length < (field.min ?? 1)) missing.push(path);
+      for (const [index, item] of items.entries()) {
+        missingIn(field.fields, item, `${path}.${index}.`, missing);
+      }
+    } else if (isRequired(field, values) && !isFilled(values[field.id])) {
+      missing.push(path);
+    }
+  }
+  return missing;
+}
+
+/**
+ * The required-but-empty fields, as paths such as `ownerName` or `rules.0.breachDetails`.
+ * Download is enabled exactly when this is empty, so a placeholder can never reach a sent
+ * notice. Fields hidden by `showIf` are skipped: nobody can fill in what they can't see.
+ */
+export function missingFields(template, values) {
+  return missingIn(template.fields, values, '', []);
 }
