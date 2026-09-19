@@ -33,6 +33,11 @@ function defaultsFor(fields, seed) {
   return values;
 }
 
+/** A new, empty item for a repeatable group, e.g. one more rule. */
+export function defaultGroupItem(field) {
+  return defaultsFor(field.fields, {});
+}
+
 /** The values a fresh form starts with. */
 export function defaultValues(template) {
   return defaultsFor(template.fields, {});

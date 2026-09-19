@@ -27,7 +27,14 @@ npm install
 npm run dev
 ```
 
-*(Under construction — the app itself doesn't exist yet.)*
+Other scripts:
+
+```sh
+npm test        # Vitest
+npm run lint    # oxlint
+npm run build   # production build into dist/
+npm run proof   # sample PDFs into .proof/ (gitignored), built from obviously fake values
+```
 
 ## Licence
 

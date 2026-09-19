@@ -14,3 +14,8 @@
   wording reproduced exactly (the source's management firm's name becomes "the Managing Agent"). Every conditional
   has a test, and so does every required field's placeholder.
 - One blank line before Schedule A clause 2, however many rules and images precede it.
+- The app: a template picker, a form generated from the template's fields (with a repeatable rule
+  group, image inputs, and a confirm-by date that follows the notice date until edited by hand),
+  a live preview rebuilt 300 ms after the last change, and a download that stays disabled until
+  every required field is filled. Every image is redrawn through a canvas, which downscales it
+  and bakes in any phone-photo rotation.

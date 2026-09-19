@@ -106,15 +106,22 @@ body {
   padding: 20px;
 }
 
-.details h2 {
+.details h2,
+.details h3 {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
-  margin: 22px 0 12px;
+  margin: 26px 0 12px;
 }
 
-.details h2:first-child {
-  margin-top: 0;
+.details h2.template-title {
+  font-size: 21px;
+  margin: 10px 0 0;
+}
+
+.back {
+  font-size: 13px;
+  color: var(--accent-text);
 }
 
 .field {
@@ -139,8 +146,10 @@ body {
 }
 
 input[type='text'],
+input[type='email'],
 input[type='date'],
-input[type='file'] {
+input[type='file'],
+textarea {
   width: 100%;
   padding: 9px 10px;
   font: inherit;
@@ -155,7 +164,13 @@ input[type='range'] {
   accent-color: var(--accent);
 }
 
-input:focus-visible {
+textarea {
+  resize: vertical;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -220,6 +235,14 @@ input:focus-visible {
 .preview {
   padding: 10px;
   overflow: hidden;
+}
+
+/* The form is long; keep the notice in view beside it while you fill it in. */
+@media (width >= 900px) {
+  .preview {
+    position: sticky;
+    top: 16px;
+  }
 }
 
 .preview iframe {
@@ -295,4 +318,91 @@ input:focus-visible {
 .card p {
   margin: 0;
   color: var(--ink-soft);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+
+/* A repeatable group: each item is its own bordered card. */
+.group {
+  margin-bottom: 16px;
+}
+
+.group-item {
+  margin: 0 0 12px;
+  padding: 14px 14px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+}
+
+.group-item legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.group-item .link {
+  margin: 0 0 8px;
+}
+
+.file-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-row input[type='file'] {
+  flex: 1 1 200px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.file-row .hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.hint.is-error {
+  color: var(--refuse);
+}
+
+.secondary,
+.link {
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.secondary {
+  padding: 8px 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.secondary:disabled,
+.link:disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.link {
+  padding: 4px 2px;
+  color: var(--accent-text);
+  background: none;
+  border: 0;
+  text-decoration: underline;
 }

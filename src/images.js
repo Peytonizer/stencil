@@ -45,11 +45,12 @@ export function detectImageType(bytes) {
  *
  * `width` and `height` are in pixels, which layout treats as points (1 px = 1 pt).
  *
- * A JPEG always goes through a canvas. Phone photos carry their rotation in an EXIF flag that
- * pdf-lib ignores, while `createImageBitmap` applies it, so the bitmap's size and the file's
- * pixels would disagree and the image would print stretched. Redrawing bakes the rotation in,
- * so the bytes and the size agree. A PNG has no such flag and only goes through a canvas when
- * it is oversize.
+ * Every image goes through a canvas, JPEG and PNG alike. Phone photos carry their rotation in
+ * an EXIF flag that pdf-lib ignores, while `createImageBitmap` applies it, so the bitmap's size
+ * and the file's pixels would disagree and the image would print stretched. Redrawing bakes
+ * the rotation in, so the bytes and the size agree. It also turns whatever encoding the file
+ * used (interlaced, 16-bit, progressive, CMYK) into one pdf-lib can embed, so a picture that
+ * looks fine on screen can't make the whole notice fail to build.
  */
 export async function prepareImage(file, label = 'The image') {
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -69,10 +70,6 @@ export async function prepareImage(file, label = 'The image') {
 
   try {
     const longest = Math.max(bitmap.width, bitmap.height);
-    if (type === 'png' && longest <= MAX_DIMENSION) {
-      return { image: { bytes, type, width: bitmap.width, height: bitmap.height } };
-    }
-
     const scale = Math.min(1, MAX_DIMENSION / longest);
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(bitmap.width * scale);
