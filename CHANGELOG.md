@@ -25,3 +25,4 @@
   shrink below their content's natural width unless told to.
 - The letterhead is now required, and is the header of every page rather than page 1 only. While
   it is missing the preview shows a red `[Letterhead]` in the band and download stays disabled.
+- The privacy line under the title is the green pill lodger and former use, with the shield icon.

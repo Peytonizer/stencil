@@ -58,10 +58,23 @@ body {
   color: var(--ink-soft);
 }
 
+/* A pill, not plain text: copied from lodger's and former's `.privacy-line`, which reads as a
+   status badge rather than a caption. */
 .privacy-line {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--ink-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+  background: var(--pistachio);
+  color: var(--ink);
+  font-size: 0.83rem;
+  font-weight: 500;
+}
+
+.privacy-line svg {
+  flex: none;
 }
 
 .theme-toggle {
