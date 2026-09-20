@@ -38,3 +38,6 @@
   clause 2 ("being 12, 45 Example Street"), the source's stray space removed from "commit an
   offence, and" in clause 6a, Schedule A clause 2 kept together with its remedies so it never
   splits across a page, and a blank line before Schedule A clause 3. SPEC.md records each.
+- Fixed clause 3 being left at the foot of a page with the seal on the next when Additional
+  requests were filled in: the keep-with-next chain that ties clause 3 to the seal block stopped
+  at the additional requests paragraph, which now carries it on.

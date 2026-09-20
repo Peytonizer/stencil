@@ -2,10 +2,11 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import { addDays, todayInCanberra } from '../src/format.js';
+import { layoutBlocks } from '../src/pdf/layout.js';
 import { buildPdf } from '../src/pdf/render.js';
 import { TEMPLATES, defaultValues, getTemplate, missingFields } from '../src/templates/index.js';
 import { infringementNotice as template } from '../src/templates/infringement-notice.js';
-import { fakeImage, realImage } from './helpers.js';
+import { fakeImage, loadFonts, realImage } from './helpers.js';
 
 const rule = (extra = {}) => ({
   ruleNumber: 'Rule 12',
@@ -272,6 +273,34 @@ describe('Schedule A clause 2 and the space before clause 3', () => {
     expect(blocks[at - 1]).toEqual({ type: 'blank' });
     expect(blocks[at - 2].type).toBe('keep');
   });
+});
+
+const pageOf = (pages, needle) =>
+  pages.findIndex((page) => page.ops.some((op) => op.op === 'text' && op.text.includes(needle)));
+
+describe('clause 3 and the seal', () => {
+  // The chain that keeps clause 3 with the seal runs through the additional requests. When it
+  // stopped at them, clause 3 could be left at the foot of a page with the seal on the next.
+  it('keeps the additional requests with what follows them', () => {
+    const blocks = flat(build({ additionalRequests: 'Please respond promptly.' }));
+    const index = blocks.findIndex((block) => textOf(block) === 'Please respond promptly.');
+    expect(blocks[index].keepWithNext).toBe(true);
+  });
+
+  it.each(['', 'Please respond promptly.', 'One line.\nTwo lines.'])(
+    'puts clause 3 on the seal\'s page however far down the page it falls (additional: %j)',
+    async (additionalRequests) => {
+      const fonts = await loadFonts();
+      for (let lines = 0; lines <= 45; lines++) {
+        const breachDetails = Array.from({ length: lines }, (_, i) => `Detail ${i}`).join('\n');
+        const rules = [rule({ breachDetails }), rule({ breachDetails })];
+        const pages = layoutBlocks(build({ rules, additionalRequests, seal: fakeImage(240, 200) }), fonts);
+        const clause3 = pageOf(pages, 'requests that the contravention of these');
+        expect(pageOf(pages, 'be repeated.'), `${lines} lines: clause 3 splits`).toBe(clause3);
+        expect(pageOf(pages, 'The Common Seal of'), `${lines} lines: seal apart from clause 3`).toBe(clause3);
+      }
+    },
+  );
 });
 
 describe('the space before Schedule A clause 2', () => {

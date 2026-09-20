@@ -452,7 +452,10 @@ function scheduleA(values) {
 
   const additional = clean(values.additionalRequests);
   if (additional) {
-    blocks.push(para([plain(additional)], { x: SCHEDULE_BODY_X }), blank);
+    // Keep-with-next so clause 3's chain runs through the additional requests to the seal
+    // block. Without it the chain stopped at this paragraph and clause 3 could sit at the foot
+    // of a page with the seal alone on the next.
+    blocks.push(para([plain(additional)], { x: SCHEDULE_BODY_X, keepWithNext: true }), blank);
   }
   return blocks;
 }
