@@ -41,3 +41,5 @@
 - Fixed clause 3 being left at the foot of a page with the seal on the next when Additional
   requests were filled in: the keep-with-next chain that ties clause 3 to the seal block stopped
   at the additional requests paragraph, which now carries it on.
+- The download is named `YYYYMMDD UP<units plan> Infringement Notice - Lot <lot>.pdf`, for
+  example `20260919 UP9999 Infringement Notice - Lot 34.pdf`, so notices sort by date in a folder.

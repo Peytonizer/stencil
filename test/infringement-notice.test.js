@@ -468,13 +468,13 @@ describe('the definition', () => {
     for (const field of template.fields) expect(sections.has(field.section), field.id).toBe(true);
   });
 
-  it('names the download as the spec says', () => {
-    expect(template.filename(full())).toBe('Rule Infringement Notice - UP 9999 Unit 12 - 2026-09-19.pdf');
+  it('names the download as the date, the units plan and the lot', () => {
+    expect(template.filename(full())).toBe('20260919 UP9999 Infringement Notice - Lot 34.pdf');
   });
 
   it('cannot put a path separator into the filename', () => {
-    expect(template.filename(full({ unitNumber: '12/3', unitsPlanNumber: 'A:B' }))).toBe(
-      'Rule Infringement Notice - UP A-B Unit 12-3 - 2026-09-19.pdf',
+    expect(template.filename(full({ lotNumber: '12/3', unitsPlanNumber: 'A:B' }))).toBe(
+      '20260919 UPA-B Infringement Notice - Lot 12-3.pdf',
     );
   });
 });

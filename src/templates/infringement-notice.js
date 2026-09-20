@@ -493,8 +493,10 @@ export const infringementNotice = {
   sections: SECTIONS,
   fields: FIELDS,
 
+  /** "20260919 UP9999 Infringement Notice - Lot 34.pdf": the date is the notice date as YYYYMMDD. */
   filename(values) {
-    return `Rule Infringement Notice - UP ${forFilename(values.unitsPlanNumber)} Unit ${forFilename(values.unitNumber)} - ${clean(values.noticeDate)}.pdf`;
+    const date = clean(values.noticeDate).replaceAll('-', '');
+    return `${date} UP${forFilename(values.unitsPlanNumber)} Infringement Notice - Lot ${forFilename(values.lotNumber)}.pdf`;
   },
 
   build(values) {
