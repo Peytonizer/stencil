@@ -31,6 +31,10 @@ import { renderPicker } from './ui/picker.js';
 
 const REBUILD_DELAY_MS = 300;
 
+/** The screenshot reader is a spike: it shows only at `?ocr`, and nothing of it is loaded
+ *  otherwise. */
+const OCR_ENABLED = new URLSearchParams(location.search).has('ocr');
+
 const pickerView = document.querySelector('[data-view="picker"]');
 const formView = document.querySelector('[data-view="form"]');
 const formPanel = document.querySelector('[data-form]');
@@ -79,7 +83,8 @@ function openTemplate(template) {
   // whole list each time would be noise. The count above it is what gets announced.
   const missingList = Object.assign(document.createElement('ul'), { className: 'missing-list' });
   actions.append(download, statusRemaining, missingList, statusSeal, statusError);
-  formPanel.replaceChildren(back, title, fields, actions);
+  const ocrSlot = document.createElement('div');
+  formPanel.replaceChildren(back, title, ocrSlot, fields, actions);
 
   const current = { url: null, bytes: null, filename: '' };
   let timer = null;
@@ -151,8 +156,22 @@ function openTemplate(template) {
   showStatus(form.values, missingFields(template, form.values));
   rebuild(form.values);
 
+  let closed = false;
+  let stopOcr = () => {};
+  if (OCR_ENABLED) {
+    import('./ui/ocr.js').then(({ renderOcrPanel }) => {
+      if (closed) return;
+      stopOcr = renderOcrPanel(ocrSlot, {
+        apply: form.applySuggestions,
+        labelOf: (id) => template.fields.find((field) => field.id === id)?.label ?? id,
+      });
+    });
+  }
+
   document.title = `${template.name} — stencil`;
   return () => {
+    closed = true;
+    stopOcr();
     clearTimeout(timer);
     generation += 1;
     if (current.url) URL.revokeObjectURL(current.url);

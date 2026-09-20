@@ -15,7 +15,9 @@
     "@fontsource-variable/fraunces": "5.3.0",
     "@fontsource/dm-mono": "5.3.0",
     "@fontsource/dm-sans": "5.3.0",
-    "pdf-lib": "1.17.1"
+    "@tesseract.js-data/eng": "1.0.0",
+    "pdf-lib": "1.17.1",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "oxlint": "1.81.0",

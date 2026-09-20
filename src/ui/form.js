@@ -17,6 +17,9 @@
 import { imageFromClipboardItems, prepareImage } from '../images.js';
 import { defaultGroupItem, defaultValues } from '../templates/index.js';
 
+/** Below this word confidence (0 to 100) a value read from a screenshot is flagged as unsure. */
+const LOW_CONFIDENCE = 80;
+
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
@@ -40,6 +43,10 @@ export function renderForm(template, container, onChange) {
   const values = defaultValues(template);
   /** Paths the user has edited by hand, so a following default stops following. */
   const edited = new Set();
+  /** Top-level fields filled from a screenshot and not touched since, with how sure the reader
+   *  was. They are marked on the form until the user edits them, so nobody sends a guess they
+   *  didn't look at. */
+  const suggested = new Map();
   /** One check per field with a `showIf`, rebuilt with the DOM. */
   let visibility = [];
 
@@ -59,7 +66,20 @@ export function renderForm(template, container, onChange) {
 
   function userEdited(path) {
     edited.add(path);
+    if (suggested.delete(path)) {
+      const wrapper = container.querySelector(`[data-suggested="${path}"]`);
+      wrapper?.removeAttribute('data-suggested');
+      wrapper?.querySelector('.suggestion')?.remove();
+    }
     update();
+  }
+
+  /** Text under a field that was read from a screenshot. */
+  function suggestionHint({ confidence, note }) {
+    const parts = ['Read from the screenshot. Check it.'];
+    if (confidence < LOW_CONFIDENCE) parts.push('The reader was unsure of this one.');
+    if (note) parts.push(note);
+    return el('span', { class: 'hint suggestion' }, parts.join(' '));
   }
 
   function renderImage(field, ctx, path, id) {
@@ -192,6 +212,11 @@ export function renderForm(template, container, onChange) {
             hint,
           );
 
+    if (suggested.has(field.id) && ctx === values) {
+      wrapper.dataset.suggested = field.id;
+      wrapper.append(suggestionHint(suggested.get(field.id)));
+    }
+
     if (field.showIf) {
       const check = () => {
         wrapper.hidden = !field.showIf(ctx);
@@ -257,6 +282,30 @@ export function renderForm(template, container, onChange) {
     container.replaceChildren(...nodes);
   }
 
+  /**
+   * Fill fields from `found`, `{ [fieldId]: { value, confidence, note? } }`. A field the user has
+   * already filled is left alone; one filled by an earlier screenshot and not edited since is
+   * replaced. Returns `{ applied, skipped }`, lists of field ids.
+   */
+  function applySuggestions(found) {
+    const applied = [];
+    const skipped = [];
+    for (const [id, { value, confidence, note }] of Object.entries(found)) {
+      const field = template.fields.find((f) => f.id === id);
+      if (!field || ['image', 'group', 'checkbox'].includes(field.type)) continue;
+      if (values[id] && !suggested.has(id)) {
+        skipped.push(id);
+        continue;
+      }
+      values[id] = value;
+      suggested.set(id, { confidence, note });
+      applied.push(id);
+    }
+    renderAll();
+    update();
+    return { applied, skipped };
+  }
+
   renderAll();
-  return { values };
+  return { values, applySuggestions };
 }
