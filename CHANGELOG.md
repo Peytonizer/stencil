@@ -43,3 +43,6 @@
   at the additional requests paragraph, which now carries it on.
 - The download is named `YYYYMMDD UP<units plan> Infringement Notice - Lot <lot>.pdf`, for
   example `20260919 UP9999 Infringement Notice - Lot 34.pdf`, so notices sort by date in a folder.
+- Under the download button, the count of fields left to fill is now a live list of them, each
+  named as it is on the form ("Rule 2: Description of the breach"). Clicking one takes you to
+  that field. The list follows the form's order and empties as fields are filled.

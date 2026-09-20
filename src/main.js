@@ -25,7 +25,7 @@ import '@fontsource/dm-mono/400.css';
 // The light/dark toggle is strata-kit's; it wires itself to the [data-theme-toggle] button.
 import '../vendor/strata-kit/theme-toggle.js';
 import { buildPdf } from './pdf/render.js';
-import { TEMPLATES, getTemplate, missingFields } from './templates/index.js';
+import { TEMPLATES, describeMissing, getTemplate, missingFields } from './templates/index.js';
 import { renderForm } from './ui/form.js';
 import { renderPicker } from './ui/picker.js';
 
@@ -45,6 +45,12 @@ function line(className = '') {
   const p = document.createElement('p');
   p.className = `status ${className}`.trim();
   return p;
+}
+
+/** Take the person to a field: focusing scrolls it into view, which is faster than hunting up
+ *  a long form for the one that was missed. Ids are the form's, `f-` plus the path. */
+function goTo(path) {
+  document.getElementById(`f-${path.replaceAll('.', '-')}`)?.focus();
 }
 
 function openTemplate(template) {
@@ -69,7 +75,10 @@ function openTemplate(template) {
   const statusSeal = line('is-warning');
   const statusError = line('is-error');
   statusRemaining.setAttribute('role', 'status');
-  actions.append(download, statusRemaining, statusSeal, statusError);
+  // Outside the live region on purpose: it is rebuilt on every keystroke, and announcing the
+  // whole list each time would be noise. The count above it is what gets announced.
+  const missingList = Object.assign(document.createElement('ul'), { className: 'missing-list' });
+  actions.append(download, statusRemaining, missingList, statusSeal, statusError);
   formPanel.replaceChildren(back, title, fields, actions);
 
   const current = { url: null, bytes: null, filename: '' };
@@ -83,7 +92,20 @@ function openTemplate(template) {
     statusRemaining.textContent =
       missing.length === 0
         ? 'Ready to download.'
-        : `${missing.length} ${missing.length === 1 ? 'field' : 'fields'} left to fill.`;
+        : `${missing.length} ${missing.length === 1 ? 'field' : 'fields'} left to fill:`;
+    missingList.replaceChildren(
+      ...describeMissing(template, missing).map(({ path, label }) => {
+        const jump = Object.assign(document.createElement('button'), {
+          type: 'button',
+          className: 'link',
+          textContent: label,
+        });
+        jump.addEventListener('click', () => goTo(path));
+        const item = document.createElement('li');
+        item.append(jump);
+        return item;
+      }),
+    );
     statusSeal.textContent = sealField && !values.seal ? sealField.warning : '';
   }
 

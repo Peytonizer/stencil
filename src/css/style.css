@@ -258,6 +258,16 @@ button:focus-visible {
   color: var(--refuse);
 }
 
+.missing-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.missing-list:empty {
+  display: none;
+}
+
 .status.is-warning {
   color: var(--warn);
 }

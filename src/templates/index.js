@@ -71,3 +71,27 @@ function missingIn(fields, values, prefix, missing) {
 export function missingFields(template, values) {
   return missingIn(template.fields, values, '', []);
 }
+
+/**
+ * The words to show a person for each path `missingFields` returns: the field's label, with a
+ * repeatable group's item put first ("Rule 2: Description of the breach"). The paths keep their
+ * order, which is the form's, so the list reads top to bottom as the form does.
+ */
+export function describeMissing(template, paths) {
+  return paths.map((path) => {
+    const parts = [];
+    let fields = template.fields;
+    const segments = path.split('.');
+    for (let i = 0; i < segments.length; i++) {
+      const field = fields.find((candidate) => candidate.id === segments[i]);
+      if (field.type === 'group' && i + 1 < segments.length) {
+        parts.push(`${field.itemLabel} ${Number(segments[i + 1]) + 1}`);
+        fields = field.fields;
+        i += 1;
+      } else {
+        parts.push(field.label);
+      }
+    }
+    return { path, label: parts.join(': ') };
+  });
+}

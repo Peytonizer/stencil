@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays, todayInCanberra } from '../src/format.js';
 import { layoutBlocks } from '../src/pdf/layout.js';
 import { buildPdf } from '../src/pdf/render.js';
-import { TEMPLATES, defaultValues, getTemplate, missingFields } from '../src/templates/index.js';
+import { TEMPLATES, defaultValues, describeMissing, getTemplate, missingFields } from '../src/templates/index.js';
 import { infringementNotice as template } from '../src/templates/infringement-notice.js';
 import { fakeImage, loadFonts, realImage } from './helpers.js';
 
@@ -405,6 +405,31 @@ describe('unfilled fields', () => {
     const ph = (values) => missingRuns(template.build(values)).map((run) => run.text);
     expect(ph({ ...base, hasPropertyManager: true })).toContain('[PM email]');
     expect(ph({ ...base, hasPropertyManager: false })).not.toContain('[PM email]');
+  });
+});
+
+describe('describeMissing', () => {
+  it('names a missing field by its label, in the form\'s order', () => {
+    const paths = missingFields(template, full({ ownerName: '', lotNumber: '', letterhead: null }));
+    expect(describeMissing(template, paths)).toEqual([
+      { path: 'letterhead', label: 'Letterhead' },
+      { path: 'ownerName', label: 'Owner name' },
+      { path: 'lotNumber', label: 'Lot number' },
+    ]);
+  });
+
+  it('puts the rule first for a field inside a rule, numbered from 1', () => {
+    const rules = [rule(), rule({ ruleNumber: '' }), rule({ breachDetails: '' })];
+    expect(describeMissing(template, missingFields(template, full({ rules })))).toEqual([
+      { path: 'rules.1.ruleNumber', label: 'Rule 2: Rule number' },
+      { path: 'rules.2.breachDetails', label: 'Rule 3: Description of the breach' },
+    ]);
+  });
+
+  it('names the rules group itself when there are none', () => {
+    expect(describeMissing(template, missingFields(template, full({ rules: [] })))).toEqual([
+      { path: 'rules', label: 'Rules contravened' },
+    ]);
   });
 });
 
