@@ -9,6 +9,12 @@
   are left blank and listed. The Content-Security-Policy gains `'wasm-unsafe-eval'` and
   `worker-src blob:` and still has no `connect-src`. tesseract.js is driven through its worker
   protocol rather than `createWorker`, which can't be given language data as bytes in 7.0.0.
+- Screenshot reader: the building name is filled too. The U/Plan box holds "<plan number>
+  <building name> <address>"; the number and the name are taken and the address is ignored (Street
+  No and Street Name give it more reliably). The lot, unit and street number, which sit in small
+  boxes against their labels and read worst, are now read a second time on their own, one line at
+  a time. A label run together with its value ("Lot*12") is split, box borders are trimmed off short
+  values, and the report now says whether a label wasn't found or its box couldn't be read.
 
 ## 0.1.0 – 2026-09-20
 

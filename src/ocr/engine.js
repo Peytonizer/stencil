@@ -36,6 +36,10 @@ const OEM_LSTM_ONLY = 1;
 /** "Sparse text": find as much text as possible, in no particular order. The screen is labels
  *  and boxes, not paragraphs. */
 const PSM_SPARSE_TEXT = '11';
+/** "Treat the image as a single text line". */
+const PSM_SINGLE_LINE = '7';
+/** What a lot, unit or street number is made of. */
+const CODE_CHARACTERS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/-';
 
 /** A blob worker resolves nothing relative to the page, so the paths handed to it are absolute. */
 const absolute = (url) => new URL(url, location.href).href;
@@ -74,11 +78,11 @@ export async function createEngine(onProgress = () => {}) {
     pending.clear();
   });
 
-  const send = (action, payload, transfer = []) =>
+  const send = (action, payload) =>
     new Promise((resolve, reject) => {
       jobs += 1;
       pending.set(`job-${jobs}`, { resolve, reject });
-      worker.postMessage({ workerId: 'stencil', jobId: `job-${jobs}`, action, payload }, transfer);
+      worker.postMessage({ workerId: 'stencil', jobId: `job-${jobs}`, action, payload });
     });
 
   try {
@@ -100,11 +104,12 @@ export async function createEngine(onProgress = () => {}) {
   return {
     async recognize(bytes, onStatus) {
       progress = onStatus ?? onProgress;
-      const result = await send(
-        'recognize',
-        { image: bytes, options: {}, output: { text: false, blocks: true } },
-        [bytes.buffer],
-      );
+      // `bytes` is copied, not transferred: the same image is read again for the short values.
+      const result = await send('recognize', {
+        image: bytes,
+        options: {},
+        output: { text: false, blocks: true },
+      });
       const words = [];
       for (const block of result.blocks ?? []) {
         for (const paragraph of block.paragraphs) {
@@ -112,6 +117,24 @@ export async function createEngine(onProgress = () => {}) {
         }
       }
       return words;
+    },
+    /**
+     * Read one box of the image on its own, as a single line of letters, digits, slash and dash.
+     * `box` is `{ left, top, width, height }` in the image's pixels. This is what fixes the small
+     * boxes that the whole-page pass reads badly (a lot number touching its label's asterisk went
+     * from 62% to 90%), and a single line with a whitelist can't come back as a paragraph of noise.
+     */
+    async recognizeLine(bytes, box) {
+      const result = await send('recognize', {
+        image: bytes,
+        options: {
+          rectangle: box,
+          tessedit_pageseg_mode: PSM_SINGLE_LINE,
+          tessedit_char_whitelist: CODE_CHARACTERS,
+        },
+        output: { text: true },
+      });
+      return { text: result.text.trim(), confidence: result.confidence };
     },
     terminate: () => worker.terminate(),
   };

@@ -48,6 +48,17 @@ const screen = (over = {}) => [
   ...(over.extra ?? []),
 ];
 
+/** The U/Plan row with `texts` as its value, one word after another. */
+const planRow = (words, ...texts) => {
+  let x = 104;
+  const value = texts.map((text) => {
+    const word = w(text, x, 63);
+    x += text.length * 6 + 6;
+    return word;
+  });
+  return [...words.filter((word) => !(word.bbox.y0 === 63 && word.bbox.x0 >= 104)), ...value];
+};
+
 const without = (words, ...texts) => words.filter((word) => !texts.includes(word.text));
 
 describe('parseLotOwner', () => {
@@ -151,11 +162,112 @@ describe('parseLotOwner', () => {
     expect(parseLotOwner(unsure).fields.suburb).toEqual({ value: 'Canberra', confidence: 55 });
   });
 
+  describe('the U/Plan box', () => {
+    it('takes the plan number and the building name and ignores the address', () => {
+      const words = planRow(screen(), '1234', 'EXAMPLE', 'APARTMENTS', '45', 'EXAMPLE', 'ST');
+      const { fields } = parseLotOwner(words);
+      expect(fields.unitsPlanNumber.value).toBe('1234');
+      expect(fields.buildingName.value).toBe('EXAMPLE APARTMENTS');
+      expect(fields.buildingName.note).toMatch(/check where the name ends/i);
+      // The address comes from Street No and Street Name, not from this box.
+      expect(fields.streetAddress.value).toBe('45 Example Street');
+    });
+
+    it('finds the end of the name by the street when the address has no number', () => {
+      // The building shares its street's first word, so the cut is at the second "Example".
+      const words = planRow(screen(), '1234', 'EXAMPLE', 'APARTMENTS', 'EXAMPLE', 'STREET', 'CANBERRA');
+      expect(parseLotOwner(words).fields.buildingName.value).toBe('EXAMPLE APARTMENTS');
+    });
+
+    it('leaves the building name out when the box holds only the plan number', () => {
+      expect(parseLotOwner(screen()).fields.buildingName).toBeUndefined();
+    });
+
+    it('drops a building name it was unsure of, but keeps the plan number', () => {
+      const words = planRow(screen(), '1234', 'EXAMPLE', 'APARTMENTS', '45').map((word) =>
+        word.text === 'APARTMENTS' ? Object.assign(word, { confidence: 30 }) : word,
+      );
+      const { fields } = parseLotOwner(words);
+      expect(fields.unitsPlanNumber.value).toBe('1234');
+      expect(fields.buildingName).toBeUndefined();
+    });
+  });
+
+  describe('short values read a second time', () => {
+    const shaky = (text, confidence) =>
+      screen().map((word) => (word.text === text ? Object.assign(word, { confidence }) : word));
+
+    it('reports where each short value is', () => {
+      const { regions } = parseLotOwner(screen());
+      expect(Object.keys(regions).toSorted()).toEqual(['lotNumber', 'streetNumber', 'unitNumber']);
+      // Around the word "12", at x 113 to 125 and y 92 to 102.
+      expect(regions.lotNumber).toEqual({ x0: 113, x1: 125, y0: 92, y1: 102 });
+    });
+
+    it('fills a value the first pass was too unsure of when the reread is surer', () => {
+      const words = shaky('45', 18);
+      expect(parseLotOwner(words).fields.streetAddress.value).toBe('Example Street');
+      const again = parseLotOwner(words, { streetNumber: { text: '45', confidence: 61 } });
+      expect(again.fields.streetAddress.value).toBe('45 Example Street');
+      expect(again.fields.streetAddress.confidence).toBe(61);
+    });
+
+    it('prefers the reread only if it scored at least as well', () => {
+      const words = shaky('12', 70);
+      const worse = parseLotOwner(words, { lotNumber: { text: '17', confidence: 60 } });
+      expect(worse.fields.lotNumber.value).toBe('12');
+      const better = parseLotOwner(words, { lotNumber: { text: '17', confidence: 90 } });
+      expect(better.fields.lotNumber.value).toBe('17');
+    });
+
+    it('ignores a reread that is not a plausible value', () => {
+      const words = shaky('12', 70);
+      const junk = parseLotOwner(words, { lotNumber: { text: '|', confidence: 99 } });
+      expect(junk.fields.lotNumber.value).toBe('12');
+    });
+
+    it('looks to the right of the label for a box in which nothing was found', () => {
+      const { regions, fields } = parseLotOwner(without(screen(), '12'));
+      expect(fields.lotNumber).toBeUndefined();
+      // Lot* ends at x 106; the next label, Unit, begins at 174, so the reach is capped at 50.
+      expect(regions.lotNumber.x0).toBe(106);
+      expect(regions.lotNumber.x1).toBe(156);
+      // A reread of that stretch can fill it.
+      const again = parseLotOwner(without(screen(), '12'), { lotNumber: { text: '12', confidence: 88 } });
+      expect(again.fields.lotNumber.value).toBe('12');
+    });
+  });
+
+  describe('a lot number printed against its label', () => {
+    // Seen on the real screen: the asterisk touches the box and the value starts at its edge.
+    const fuse = (words, fused) =>
+      words.flatMap((word) => {
+        if (word.text === 'Lot*') return [w(fused, 82, 92)];
+        return word.text === '12' && word.bbox.x0 === 113 ? [] : [word];
+      });
+
+    it('is split out of a word the reader ran together', () => {
+      expect(parseLotOwner(fuse(screen(), 'Lot*12')).fields.lotNumber.value).toBe('12');
+      expect(parseLotOwner(fuse(screen(), "Lot*'4")).fields.lotNumber.value).toBe('4');
+    });
+
+    it('is cleaned of box borders left on its edges', () => {
+      const bordered = screen().map((word) => (word.text === '12' ? { ...word, text: '|12|' } : word));
+      expect(parseLotOwner(bordered).fields.lotNumber.value).toBe('12');
+    });
+
+    it('does not turn a word that merely starts with "Lot" into a label and a value', () => {
+      const { fields } = parseLotOwner(fuse(screen(), 'Lotus'));
+      expect(fields.lotNumber).toBeUndefined();
+    });
+  });
+
   it('returns nothing for an image with no words', () => {
     expect(parseLotOwner([])).toEqual({
       fields: {},
       unread: [],
       notFound: ['U/Plan', 'Lot', 'Unit', 'Street No', 'Street Name', 'Suburb', 'Owner Name', 'Email'],
+      regions: {},
     });
   });
 });

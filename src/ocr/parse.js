@@ -7,6 +7,15 @@
   share a baseline and come back as one line, or as none. So this works from word boxes alone:
   find the label words, then take the words to the right of a label up to the next label.
 
+  The U/Plan box holds more than the plan number: "<plan number> <building name> <address>".
+  The number and the building name are taken from it; the address is ignored, because the Street
+  No and Street Name boxes give the same thing more reliably.
+
+  The short values (lot, unit, street number) sit in small boxes right against their labels, where
+  Tesseract's first pass reads them worst. `parseLotOwner` reports where it found each (`regions`),
+  the caller reads those crops again on their own, and passes what it got back in as `rereads`;
+  the better-scored reading of the two is used.
+
   Nothing here is trusted. A label that is garbled is simply not found, and a value that fails its
   shape check (an email with no "@") is dropped, so the field stays blank and is listed as unread.
   A blank field is caught by the download gate; a wrong one would be sent. Every value returned
@@ -71,6 +80,13 @@ const VALUE_GAP = 1.5;
  *  will catch. Between here and the form's own warning threshold the value is filled and flagged.
  *  Chosen from a handful of samples; revisit it against real screenshots. */
 const MIN_CONFIDENCE = 50;
+
+/** The fields whose boxes are worth reading a second time, on their own. */
+const REREAD = new Set(['lotNumber', 'unitNumber', 'streetNumber']);
+
+/** With no word found in a box at all, look this far to the right of its label (in the image's own
+ *  pixels), stopping at the next label. The boxes are 40 to 90 px wide on the real screen. */
+const BLIND_REACH = 50;
 
 const norm = (text) => text.toLowerCase().replace(/[^a-z]/g, '');
 
@@ -156,13 +172,21 @@ function valueAfter(row, labels, label) {
   return taken;
 }
 
-/** Per-field shape checks. A value that fails one is treated as unread. */
+/** Box borders and the asterisk cling to short values as stray punctuation ("|12", "12'"). */
+const edges = (text) => text.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
+
+/** A short code such as a lot or unit number: letters, digits, slash or dash, up to `max` long. */
+const code = (max) => (text) => {
+  const trimmed = edges(text);
+  return trimmed.length <= max && /^[A-Za-z0-9/-]+$/.test(trimmed) ? trimmed : null;
+};
+
+/** Per-field shape checks. A value that fails one is treated as unread. The U/Plan box has its own
+ *  reader, `readPlanBox`. */
 const CLEAN = {
-  // The U/Plan box may hold more than the number, so keep the first run of digits.
-  unitsPlanNumber: (text) => text.match(/\d{1,6}/)?.[0] ?? null,
-  lotNumber: (text) => (/^[A-Za-z0-9/-]{1,6}$/.test(text) ? text : null),
-  unitNumber: (text) => (/^[A-Za-z0-9/-]{1,6}$/.test(text) ? text : null),
-  streetNumber: (text) => (/^[A-Za-z0-9/-]{1,8}$/.test(text) ? text : null),
+  lotNumber: code(6),
+  unitNumber: code(6),
+  streetNumber: code(8),
   streetName: (text) => (/[A-Za-z]{2}/.test(text) ? text : null),
   suburb: (text) => (/[A-Za-z]{2}/.test(text) ? text : null),
   ownerName: (text) => (/[A-Za-z]{2}/.test(text) ? text : null),
@@ -172,15 +196,86 @@ const CLEAN = {
   ownerEmail: (text) => (/^[^\s@]+@[^\s@]+\.[^\s@.]+$/.test(text) ? text : null),
 };
 
+/** A short label with its value printed against it. On the real screen the asterisk in "Lot*"
+ *  touches the box and the value starts at the box's edge, so Tesseract can return "Lot*12" as one
+ *  word, which is neither a label (it has digits) nor a value. Split it in two, dividing the box by
+ *  character, which is only as accurate as it needs to be to keep the two in reading order. */
+const FUSED = /^(lot|unit)(?:[^A-Za-z0-9]+([A-Za-z0-9][A-Za-z0-9/-]*)|(\d[A-Za-z0-9/-]*))$/i;
+
+function splitFused(box) {
+  const match = box.text.match(FUSED);
+  if (!match) return [box];
+  const value = match[2] ?? match[3];
+  const cut = box.text.length - value.length;
+  const x = box.x0 + ((box.x1 - box.x0) * cut) / box.text.length;
+  return [
+    { ...box, text: box.text.slice(0, cut), x1: x },
+    { ...box, text: value, x0: x },
+  ];
+}
+
+/** The U/Plan box: the plan number is the first word with a digit in it, the building name is the
+ *  words after it, and the address (which is ignored) begins at the next word with a digit, which
+ *  is its street number. With no digit to go on the address is taken to begin where the street's
+ *  name first appears (`streetFirstWord`, from the Street Name box), but never at the box's first
+ *  word after the number, since a building often shares its street's name ("Sunset Apartments,
+ *  Sunset Street"). Where the name ends is a guess, so it carries a note. */
+function readPlanBox(words, streetFirstWord) {
+  const at = words.findIndex((w) => /\d/.test(w.text));
+  if (at < 0) return { plan: null, building: null };
+  const plan = { value: words[at].text.match(/\d{1,6}/)[0], confidence: words[at].confidence };
+
+  const rest = words.slice(at + 1);
+  let end = rest.findIndex((w) => /\d/.test(w.text));
+  if (end < 0 && streetFirstWord) {
+    end = rest.findIndex((w, i) => i > 0 && norm(w.text) === streetFirstWord);
+  }
+  const name = (end < 0 ? rest : rest.slice(0, end));
+  const text = name
+    .map((w) => w.text)
+    .join(' ')
+    .replace(/^[^A-Za-z0-9]+/, '')
+    .replace(/[\s,;:|\-–—]+$/, '');
+  const building =
+    /[A-Za-z]{2}/.test(text) && name.length
+      ? {
+          value: text,
+          confidence: Math.min(...name.map((w) => w.confidence)),
+          note: 'Taken from the U/Plan box, between the plan number and the address. Check where the name ends.',
+        }
+      : null;
+  return { plan, building };
+}
+
+/** Where a short value is: the box around the words found, or, if none were, the stretch to the
+ *  right of its label. Rows are described by their centre and height, so this turns that back into
+ *  a rectangle. */
+function regionOf(row, label, taken, next) {
+  if (taken.length) {
+    return {
+      x0: Math.min(...taken.map((w) => w.x0)),
+      x1: Math.max(...taken.map((w) => w.x1)),
+      y0: Math.min(...taken.map((w) => w.y - w.h / 2)),
+      y1: Math.max(...taken.map((w) => w.y + w.h / 2)),
+    };
+  }
+  const start = row.words[label.end - 1].x1;
+  const stop = next ? row.words[next.at].x0 : start + BLIND_REACH;
+  return { x0: start, x1: Math.min(stop, start + BLIND_REACH), y0: row.y - row.h / 2, y1: row.y + row.h / 2 };
+}
+
 /**
  * `words` are `{ text, bbox: { x0, y0, x1, y1 }, confidence }` as Tesseract reports them, in the
- * image's own pixels. Returns
+ * image's own pixels. `rereads` is `{ [fieldId]: { text, confidence } }` for any of the fields
+ * named in `regions`, read again on their own. Returns
  *
  *   fields    `{ [formFieldId]: { value, confidence, note? } }`, only for what was read
  *   unread    label names found on the screen but with nothing usable beside them
  *   notFound  label names not found at all
+ *   regions   `{ [fieldId]: { x0, y0, x1, y1 } }` where a short value is, or should be, to be
+ *             read again
  */
-export function parseLotOwner(words) {
+export function parseLotOwner(words, rereads = {}) {
   const boxes = words
     .filter((w) => w.text?.trim())
     .map((w) => ({
@@ -190,23 +285,56 @@ export function parseLotOwner(words) {
       y: (w.bbox.y0 + w.bbox.y1) / 2,
       h: w.bbox.y1 - w.bbox.y0,
       confidence: w.confidence,
-    }));
+    }))
+    .flatMap(splitFused);
 
   const read = {};
+  const regions = {};
+  let planWords = null;
   for (const row of toRows(boxes)) {
     const labels = findLabels(row);
     for (const label of labels) {
       if (!(label.key in READ) || READ[label.key] in read) continue;
       const taken = valueAfter(row, labels, label);
-      const value = CLEAN[READ[label.key]](taken.map((w) => w.text).join(' '));
-      const confidence = Math.min(...taken.map((w) => w.confidence));
-      read[READ[label.key]] = value && confidence >= MIN_CONFIDENCE ? { value, confidence } : null;
+      if (label.key === 'uplan') {
+        // Read after the loop, once the Street Name box (a row below) has been read.
+        planWords = taken;
+        read.unitsPlanNumber = null;
+        continue;
+      }
+      const id = READ[label.key];
+
+      if (REREAD.has(id)) {
+        const next = labels.find((l) => l.at >= label.end);
+        regions[id] = regionOf(row, label, taken, next);
+      }
+
+      let value = CLEAN[id](taken.map((w) => w.text).join(' '));
+      let confidence = taken.length ? Math.min(...taken.map((w) => w.confidence)) : 0;
+      const again = rereads[id];
+      if (again) {
+        const clean = CLEAN[id](again.text);
+        if (clean && again.confidence >= confidence) {
+          value = clean;
+          confidence = again.confidence;
+        }
+      }
+      read[id] = value && confidence >= MIN_CONFIDENCE ? { value, confidence } : null;
     }
+  }
+
+  let building = null;
+  if (planWords) {
+    const first = norm(read.streetName?.value.split(' ')[0] ?? '');
+    const box = readPlanBox(planWords, first.length >= 3 ? first : null);
+    if (box.plan && box.plan.confidence >= MIN_CONFIDENCE) read.unitsPlanNumber = box.plan;
+    if (box.building && box.building.confidence >= MIN_CONFIDENCE) building = box.building;
   }
 
   const fields = {};
   const unread = [];
   const notFound = [];
+  if (building) fields.buildingName = building;
   for (const [key, id] of Object.entries(READ)) {
     if (read[id]) {
       if (id !== 'streetNumber' && id !== 'streetName') fields[id] = read[id];
@@ -226,5 +354,5 @@ export function parseLotOwner(words) {
     };
   }
 
-  return { fields, unread, notFound };
+  return { fields, unread, notFound, regions };
 }

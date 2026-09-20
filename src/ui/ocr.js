@@ -16,6 +16,11 @@
 import { imageFromClipboardItems } from '../images.js';
 import { parseLotOwner } from '../ocr/parse.js';
 
+/** How much of the box's surroundings a reread takes in, in the screenshot's pixels. Tight, so the
+ *  box's own border is left out: it reads as a letter. */
+const REREAD_PAD_X = 2;
+const REREAD_PAD_Y = 3;
+
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
   node.append(...children);
@@ -59,12 +64,24 @@ export function renderOcrPanel(container, { apply, labelOf }) {
       const words = await engine.recognize(bytes, progress);
 
       // The image was enlarged for reading; put the boxes back in the screenshot's own pixels.
-      const { fields, unread, notFound } = parseLotOwner(
-        words.map((word) => ({
-          ...word,
-          bbox: Object.fromEntries(Object.entries(word.bbox).map(([k, v]) => [k, v / scale])),
-        })),
-      );
+      const scaled = words.map((word) => ({
+        ...word,
+        bbox: Object.fromEntries(Object.entries(word.bbox).map(([k, v]) => [k, v / scale])),
+      }));
+
+      // The small boxes (lot, unit, street number) are read badly by the whole-page pass, so the
+      // parser says where they are and each is read again on its own.
+      const rereads = {};
+      for (const [id, box] of Object.entries(parseLotOwner(scaled).regions)) {
+        say('Checking the small boxes…');
+        rereads[id] = await engine.recognizeLine(bytes, {
+          left: Math.max(0, Math.round((box.x0 - REREAD_PAD_X) * scale)),
+          top: Math.max(0, Math.round((box.y0 - REREAD_PAD_Y) * scale)),
+          width: Math.round((box.x1 - box.x0 + 2 * REREAD_PAD_X) * scale),
+          height: Math.round((box.y1 - box.y0 + 2 * REREAD_PAD_Y) * scale),
+        });
+      }
+      const { fields, unread, notFound } = parseLotOwner(scaled, rereads);
       const { applied, skipped } = apply(fields);
 
       const lines = [];
@@ -74,8 +91,12 @@ export function renderOcrPanel(container, { apply, labelOf }) {
       if (skipped.length) {
         lines.push(`Left as you had them: ${skipped.map(labelOf).join(', ')}.`);
       }
-      const missed = [...unread, ...notFound];
-      if (missed.length) lines.push(`Not read from the screenshot: ${missed.join(', ')}.`);
+      // Two different failures: a label the reader couldn't find, or a box it found and
+      // couldn't read. Saying which is what lets a bad screenshot be told from a bad guess.
+      if (notFound.length) lines.push(`Couldn't find the label for: ${notFound.join(', ')}.`);
+      if (unread.length) {
+        lines.push(`Found the label but couldn't read a value for: ${unread.join(', ')}.`);
+      }
       report.replaceChildren(...lines.map((text) => el('li', {}, text)));
       say(applied.length ? '' : 'Nothing could be read. Is this the Lot/Owner screen?');
     } catch (error) {
