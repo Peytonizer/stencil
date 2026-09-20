@@ -17,9 +17,18 @@ Images (the rule excerpt, the seal, the letterhead) can be chosen as a file or p
 from the clipboard, so a Snipping Tool capture needs no saving first: use the "Paste from
 clipboard" button, or click in the image's row and press Ctrl+V.
 
+**Screenshot reader.** Choose or paste a screenshot of the strata software's Lot/Owner screen
+and the plan number, building name, lot, unit, street address, suburb and the owner's name and
+email are filled in. Each is marked until you edit it, so check every one against the screenshot:
+it reads text from an image and can get a digit wrong. Anything it isn't at least half sure of is
+left blank and listed instead. The reading is done in your browser by a bundled copy of
+Tesseract, run in a worker; it loads (about 8 MB) the first time you give it a screenshot, and
+never otherwise.
+
 **Privacy.** Everything happens in your browser. Nothing you type or upload — names,
 addresses, the seal — is sent anywhere or stored; the page's Content-Security-Policy blocks
-outbound requests outright. Close the tab and it's gone.
+outbound requests outright, and that includes the screenshot reader, which ships with its own
+engine and language data rather than fetching them. Close the tab and it's gone.
 
 This is not legal advice. Check any notice before you send it.
 

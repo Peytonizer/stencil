@@ -31,10 +31,6 @@ import { renderPicker } from './ui/picker.js';
 
 const REBUILD_DELAY_MS = 300;
 
-/** The screenshot reader is a spike: it shows only at `?ocr`, and nothing of it is loaded
- *  otherwise. */
-const OCR_ENABLED = new URLSearchParams(location.search).has('ocr');
-
 const pickerView = document.querySelector('[data-view="picker"]');
 const formView = document.querySelector('[data-view="form"]');
 const formPanel = document.querySelector('[data-form]');
@@ -156,17 +152,17 @@ function openTemplate(template) {
   showStatus(form.values, missingFields(template, form.values));
   rebuild(form.values);
 
+  // The screenshot reader. The panel is imported on demand and the reader itself (about 8 MB)
+  // only when a screenshot is given, so a session that never uses it loads neither.
   let closed = false;
   let stopOcr = () => {};
-  if (OCR_ENABLED) {
-    import('./ui/ocr.js').then(({ renderOcrPanel }) => {
-      if (closed) return;
-      stopOcr = renderOcrPanel(ocrSlot, {
-        apply: form.applySuggestions,
-        labelOf: (id) => template.fields.find((field) => field.id === id)?.label ?? id,
-      });
+  import('./ui/ocr.js').then(({ renderOcrPanel }) => {
+    if (closed) return;
+    stopOcr = renderOcrPanel(ocrSlot, {
+      apply: form.applySuggestions,
+      labelOf: (id) => template.fields.find((field) => field.id === id)?.label ?? id,
     });
-  }
+  });
 
   document.title = `${template.name} — stencil`;
   return () => {

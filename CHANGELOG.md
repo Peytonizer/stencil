@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Screenshot reader, behind `?ocr` while it is tested: paste or choose a screenshot of the strata
+- Screenshot reader: paste or choose a screenshot of the strata
   software's Lot/Owner screen and the plan, lot, unit, street address, suburb and owner's name
   and email are filled in, each marked until edited. It runs entirely in the tab (tesseract.js,
   bundled, in a blob worker) and never loads unless used. Values the reader is under 50% sure of
