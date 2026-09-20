@@ -39,6 +39,21 @@ export function detectImageType(bytes) {
 }
 
 /**
+ * The first image on the clipboard, from what `navigator.clipboard.read()` returns, as a Blob —
+ * or null when the clipboard holds no image (text, or nothing). This is the Snipping Tool's
+ * route: it puts its capture on the clipboard as `image/png`. Any `image/*` type is taken here
+ * and `prepareImage` decides by magic bytes whether it is one we can embed, so a clipboard
+ * holding a BMP gets the "must be a JPEG or PNG" message rather than "no image".
+ */
+export async function imageFromClipboardItems(items) {
+  for (const item of items) {
+    const type = item.types.find((t) => t.startsWith('image/'));
+    if (type) return item.getType(type);
+  }
+  return null;
+}
+
+/**
  * Read a file, reject anything that isn't a JPEG or PNG, and return
  * `{ image: { bytes, type, width, height } }`. Never throws: the result is either `{ image }`
  * or `{ error }`, so a bad file becomes a status message rather than a crash.

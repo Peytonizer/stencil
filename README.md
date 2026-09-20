@@ -10,6 +10,10 @@ common seal — and stencil typesets the finished notice in your browser. Part o
 
 - Rule Infringement Notice — Unit Titles (Management) Act 2011, s 109.
 
+Images (the rule excerpt, the seal, the letterhead) can be chosen as a file or pasted straight
+from the clipboard, so a Snipping Tool capture needs no saving first: use the "Paste from
+clipboard" button, or click in the image's row and press Ctrl+V.
+
 **Privacy.** Everything happens in your browser. Nothing you type or upload — names,
 addresses, the seal — is sent anywhere or stored; the page's Content-Security-Policy blocks
 outbound requests outright. Close the tab and it's gone.

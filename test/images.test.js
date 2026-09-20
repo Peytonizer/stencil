@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { detectImageType, prepareImage } from '../src/images.js';
+import { detectImageType, imageFromClipboardItems, prepareImage } from '../src/images.js';
 
 describe('detectImageType', () => {
   it('recognises a JPEG by its SOI marker', () => {
@@ -26,6 +26,20 @@ describe('detectImageType', () => {
 
   it('rejects a file too short to carry either signature', () => {
     expect(detectImageType(new Uint8Array([0xff]))).toBeNull();
+  });
+});
+
+const item = (types) => ({ types, getType: async (t) => `blob:${t}` });
+
+describe('imageFromClipboardItems', () => {
+  it('takes the image from a clipboard that also carries other formats', async () => {
+    const items = [item(['text/plain']), item(['text/html', 'image/png'])];
+    expect(await imageFromClipboardItems(items)).toBe('blob:image/png');
+  });
+
+  it('returns null when the clipboard holds no image', async () => {
+    expect(await imageFromClipboardItems([item(['text/plain'])])).toBeNull();
+    expect(await imageFromClipboardItems([])).toBeNull();
   });
 });
 

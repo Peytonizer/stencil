@@ -14,7 +14,7 @@
     committee may set a different period.
 */
 
-import { prepareImage } from '../images.js';
+import { imageFromClipboardItems, prepareImage } from '../images.js';
 import { defaultGroupItem, defaultValues } from '../templates/index.js';
 
 function el(tag, props = {}, ...children) {
@@ -83,18 +83,24 @@ export function renderForm(template, container, onChange) {
       remove.hidden = !image;
     };
 
-    input.addEventListener('change', async () => {
-      const [file] = input.files;
-      if (!file) return;
+    /** `file` is a File from the picker or a Blob from the clipboard; `name` is what the status
+     *  line calls it. */
+    const accept = async (file, name) => {
       const result = await prepareImage(file, field.label);
-      input.value = '';
       if (result.error) {
         show(result.error);
         return;
       }
-      ctx[field.id] = { ...result.image, name: file.name };
+      ctx[field.id] = { ...result.image, name };
       show();
       userEdited(path);
+    };
+
+    input.addEventListener('change', async () => {
+      const [file] = input.files;
+      if (!file) return;
+      await accept(file, file.name);
+      input.value = '';
     });
     remove.addEventListener('click', () => {
       ctx[field.id] = null;
@@ -102,8 +108,41 @@ export function renderForm(template, container, onChange) {
       userEdited(path);
     });
 
+    // People capture the rule with the Snipping Tool, which leaves the image on the clipboard
+    // and no file to pick. Two routes in: a button, and Ctrl+V while focus is in this row. Paste
+    // is scoped to the row because a notice has several image fields (each rule's image, the
+    // seal, the letterhead) and a page-wide handler couldn't know which one was meant.
+    const row = el('div', { class: 'file-row' }, input, remove, status);
+
+    row.addEventListener('paste', async (event) => {
+      const file = [...event.clipboardData.files].find((f) => f.type.startsWith('image/'));
+      if (!file) return;
+      event.preventDefault();
+      await accept(file, 'pasted image');
+    });
+
+    // `clipboard.read` needs a secure context (https or localhost, which both hosts are) and,
+    // in Chromium, a one-off permission prompt. Where it is missing the button is left out and
+    // Ctrl+V still works.
+    if (navigator.clipboard?.read) {
+      const paste = el('button', { type: 'button', class: 'secondary' }, 'Paste from clipboard');
+      paste.addEventListener('click', async () => {
+        try {
+          const blob = await imageFromClipboardItems(await navigator.clipboard.read());
+          if (!blob) {
+            show('There is no image on the clipboard. Take a snip first, then paste.');
+            return;
+          }
+          await accept(blob, 'pasted image');
+        } catch {
+          show('The browser blocked reading the clipboard. Click here and press Ctrl+V instead.');
+        }
+      });
+      input.after(paste);
+    }
+
     show();
-    return el('div', { class: 'file-row' }, input, remove, status);
+    return row;
   }
 
   function renderControl(field, ctx, path, id) {
