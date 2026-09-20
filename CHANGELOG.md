@@ -29,5 +29,5 @@
 - Image fields can be pasted from the clipboard, by a "Paste from clipboard" button or Ctrl+V in
   the field's row, so a Snipping Tool capture needs no saving first. Paste is scoped to the row
   because a notice has several image fields and a page-wide handler couldn't tell which was meant.
-- The theme toggle is a pill with a sun icon, matching the other strata tools. The kit's script
-  only rewrites the label text, so the icon doesn't change with the theme.
+- The theme toggle is a pill with an icon, matching the other strata tools: a sun for light and a
+  moon for dark. The icon swap is new in strata-kit's `theme-toggle.js`, so the submodule pin moves.
