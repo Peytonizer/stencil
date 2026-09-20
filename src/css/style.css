@@ -83,15 +83,27 @@ body {
   right: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--ink-soft);
-  background: var(--surface);
+  gap: 7px;
+  padding: 7px 13px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+  border-color: var(--border-strong);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* The working area: what you type on the left, what comes out on the right. */
