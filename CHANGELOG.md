@@ -31,3 +31,6 @@
   because a notice has several image fields and a page-wide handler couldn't tell which was meant.
 - The theme toggle is a pill with an icon, matching the other strata tools: a sun for light and a
   moon for dark. The icon swap is new in strata-kit's `theme-toggle.js`, so the submodule pin moves.
+- The letterhead is centred across the text measure rather than left-aligned, so a narrower
+  image (never enlarged past 1 px = 1 pt) sits in the middle of the header. One that fills the
+  measure looks the same as before. The red `[Letterhead]` placeholder is centred too.

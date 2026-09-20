@@ -68,7 +68,9 @@ export const BASELINE_DROP = 0.95;
 /**
  * The letterhead band, repeated on every page as its header: from the header distance
  * (35.4 pt below the page top) to 8 pt above the top margin, which is 70.05 pt tall. Full text
- * measure, left-aligned, sitting in the top margin above where the flowing text starts. The
+ * measure, with the image centred across it (SPEC.md's choice; it was left-aligned until 2026-09-20), sitting
+ * in the top margin above where the flowing text starts. An image that fills the measure has
+ * nothing to centre; a narrower one, which is never enlarged past 1 px = 1 pt, does. The
  * source's margins are the same on every page, so the band is too. The 8 pt gap is SPEC.md's
  * choice.
  */

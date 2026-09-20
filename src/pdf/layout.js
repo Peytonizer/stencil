@@ -41,6 +41,9 @@ function fitImage(image, maxWidth, maxHeight) {
   return { width: image.width * scale, height: image.height * scale };
 }
 
+/** The x that centres something `width` wide across the letterhead band. */
+const centredInBand = (width) => LETTERHEAD.x + (LETTERHEAD.width - width) / 2;
+
 /**
  * Work out a block's wrapped lines and heights once, ahead of placing it, so keep groups and
  * keep-with-next can ask "how tall is this?" without laying it out.
@@ -88,15 +91,16 @@ function prepare(block, fonts) {
       // Drawn on every page's header band, so it takes no room in the flow (height 0).
       if (!block.image) {
         // No letterhead yet: a red placeholder stands in for it in the preview.
+        const width = fonts.regular.widthOfTextAtSize(block.placeholder, SIZE.body);
         return {
           block,
           kind: 'letterhead',
           op: {
             op: 'text',
             text: block.placeholder,
-            x: LETTERHEAD.x,
+            x: centredInBand(width),
             y: LETTERHEAD.top - BASELINE_DROP * SIZE.body,
-            width: fonts.regular.widthOfTextAtSize(block.placeholder, SIZE.body),
+            width,
             font: 'regular',
             size: SIZE.body,
             color: MISSING_COLOUR,
@@ -110,7 +114,7 @@ function prepare(block, fonts) {
         op: {
           op: 'image',
           image: block.image,
-          x: LETTERHEAD.x,
+          x: centredInBand(box.width),
           y: LETTERHEAD.top - box.height,
           width: box.width,
           height: box.height,

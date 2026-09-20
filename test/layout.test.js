@@ -278,6 +278,19 @@ describe('the letterhead', () => {
     expect(texts(withLetterhead[0])[0].y).toBeCloseTo(texts(without[0])[0].y, 6);
   });
 
+  it('is centred across the text measure when narrower than it', () => {
+    const [page] = layoutBlocks([{ type: 'letterhead', image: fakeImage(200, 50) }, lines(1)], fonts);
+    const [image] = images(page);
+    expect(image.width).toBe(200);
+    expect(image.x).toBeCloseTo(LETTERHEAD.x + (MEASURE - 200) / 2, 6);
+  });
+
+  it('centres its red placeholder too while the letterhead is missing', () => {
+    const [page] = layoutBlocks([{ type: 'letterhead', placeholder: '[Letterhead]' }, lines(1)], fonts);
+    const placeholder = texts(page).find((op) => op.text === '[Letterhead]');
+    expect(placeholder.x + placeholder.width / 2).toBeCloseTo(LETTERHEAD.x + MEASURE / 2, 6);
+  });
+
   it('is scaled down to the band', () => {
     const [page] = layoutBlocks([{ type: 'letterhead', image: fakeImage(300, 300) }, lines(1)], fonts);
     expect(images(page)[0].height).toBeCloseTo(LETTERHEAD.top - LETTERHEAD.bottom, 6);
