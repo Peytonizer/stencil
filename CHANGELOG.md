@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Screenshot reader, behind `?ocr` while it is tested: paste or choose a screenshot of the strata
+  software's Lot/Owner screen and the plan, lot, unit, street address, suburb and owner's name
+  and email are filled in, each marked until edited. It runs entirely in the tab (tesseract.js,
+  bundled, in a blob worker) and never loads unless used. Values the reader is under 50% sure of
+  are left blank and listed. The Content-Security-Policy gains `'wasm-unsafe-eval'` and
+  `worker-src blob:` and still has no `connect-src`. tesseract.js is driven through its worker
+  protocol rather than `createWorker`, which can't be given language data as bytes in 7.0.0.
+
 ## 0.1.0 – 2026-09-20
 
 First tagged version. The Rule Infringement Notice template is complete and live.

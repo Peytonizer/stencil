@@ -13,6 +13,12 @@ import { defineConfig } from 'vite';
  * and `frame-src` allow `blob:` because the preview is the generated PDF shown in the browser's
  * own viewer. Verify that in a real browser before trusting it — see SPEC.md, build stage 5.
  *
+ * Two directives were added for the screenshot reader (src/ocr/engine.js) and nothing else:
+ * `'wasm-unsafe-eval'` lets the OCR engine's WebAssembly compile (it does not allow `eval` of
+ * strings, and script-src is still 'self'), and `worker-src blob:` lets it run in a blob worker,
+ * which inherits this policy. There is still no `connect-src`: the engine and its language data
+ * are bundled, so nothing is fetched.
+ *
  * Injected at build time rather than written into index.html, because in dev Vite needs a
  * websocket for hot reload and an inline module preamble, both of which this policy blocks.
  */
