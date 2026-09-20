@@ -1,11 +1,12 @@
 /*
   The Rule Infringement Notice: Unit Titles (Management) Act 2011, s 109.
 
-  The wording is the scrubbed source's, character for character, quirks included: the space
-  before the comma in "commit an offence , and", "The Owners - Units Plan No.{UP}" with no space
-  after "No.", and "Units Plan No {UP}" with no full stop. The one deliberate change is
-  the source's management firm's name, replaced by "the Managing Agent". Every conditional piece
-  of wording is in `build()`.
+  The wording is the scrubbed source's, character for character, quirks included: "The Owners -
+  Units Plan No.{UP}" with no space after "No." and "Units Plan No {UP}" with no full stop. The
+  deliberate changes are the source's management firm's name, replaced by "the Managing Agent";
+  a comma after the unit number in clause 2 ("being {unit}, {street}"); the source's stray space
+  before the comma in clause 6a ("commit an offence, and") removed; and a blank line before
+  Schedule A clause 3. SPEC.md records each. Every conditional piece of wording is in `build()`.
   Nothing else knows about the notice's wording.
 
   Where a number comes from is noted beside it. SPEC.md has the block-by-block listing this
@@ -343,7 +344,7 @@ function pageOneClauses(values) {
         value('lotNumber', values),
         plain(' being '),
         value('unitNumber', values),
-        plain(' '),
+        plain(', '),
         value('streetAddress', values),
         plain(', '),
         value('suburb', values),
@@ -373,7 +374,7 @@ function pageOneClauses(values) {
     ]),
     blank,
     clause(6, [plain('Should the Owner or Occupiers not comply with this notice -')]),
-    subItem('a', 'the Owner/Occupiers commit an offence , and'),
+    subItem('a', 'the Owner/Occupiers commit an offence, and'),
     subItem(
       'b',
       'the Owners Corporation may, without further notice, apply to the ACAT (ACT Civil and Administrative Tribunal) for an order in relation to the failure to comply with the notice.',
@@ -420,17 +421,19 @@ function scheduleA(values) {
   // follows after exactly one.
   for (const [index, rule] of (values.rules ?? []).entries()) blocks.push(...ruleBlocks(rule, index));
 
-  blocks.push(
+  // Clause 2, its blank line and the four remedies are kept together, so they never split
+  // across a page break.
+  const remedies = [
     scheduleClause(
       2,
       'The Owners Corporation requests that the contravention be remedied with immediate effect as follows:',
     ),
     // The source's empty numbered paragraph, which renders as a blank line.
     blank,
-  );
-  for (const [index, text] of REMEDIES.entries()) blocks.push(remedy(index, text));
+  ];
+  for (const [index, text] of REMEDIES.entries()) remedies.push(remedy(index, text));
   // Remedy (d) has no full stop in the source.
-  blocks.push(
+  remedies.push(
     item(remedyMarker(REMEDIES.length), REMEDY, [
       plain(
         'The Owners Corporation care of the Managing Agent to be provided with confirmation of the aforementioned actions by close of business on ',
@@ -438,6 +441,8 @@ function scheduleA(values) {
       valueRun(FIELD_BY_ID.get('confirmByDate'), formatDate(values.confirmByDate)),
     ]),
   );
+  // The blank before clause 3 is not in the source, which runs (d) straight into clause 3.
+  blocks.push({ type: 'keep', blocks: remedies }, blank);
   blocks.push(
     scheduleClause(3, 'The Owners Corporation requests that the contravention of these rules not be repeated.', {
       align: 'left',

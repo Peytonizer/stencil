@@ -61,12 +61,12 @@ describe('the wording', () => {
   // Copied from SPEC.md's block listing, which is the source's wording, quirks included.
   const clauses = [
     'It has been approved by the Executive Committee of The Owners Units Plan 9999 to issue an infringement notice to the owner of Unit 12 (Lot 34) of UP 9999.',
-    "Jane Example is recorded in the Corporation's records as being the Owner of Lot 34 being 12 45 Example Street, Braddon in Units Plan No 9999.",
+    "Jane Example is recorded in the Corporation's records as being the Owner of Lot 34 being 12, 45 Example Street, Braddon in Units Plan No 9999.",
     'With reference to Section 107 of the Unit Titles (Management) Act 2011, the Owner and Occupiers of the unit are bound by the rules of the Corporation and those reflected in the Unit Titles (Management) Act 2011.',
     'The Owners Corporation believes that the Owner and/or the Occupiers of the unit are in breach of the Owners Corporation Rules and/or those reflected in the Unit Titles (Management) Act 2011 and detailed in Schedule A of this Notice.',
     'Please take note that the Owner and Occupiers are bound by the provisions of the Unit Titles (Management) Act 2011 and that pursuant to Section 109 of that Act, you are hereby given notice to remedy the breach.',
     'Should the Owner or Occupiers not comply with this notice -',
-    'the Owner/Occupiers commit an offence , and',
+    'the Owner/Occupiers commit an offence, and',
     'the Owners Corporation may, without further notice, apply to the ACAT (ACT Civil and Administrative Tribunal) for an order in relation to the failure to comply with the notice.',
     'Pursuant to Section 31 of the Unit Titles (Management) Act 2011, the Owners Corporation will recover all expenditure incurred in pursuing rectification of the rules breached, from the Owner/s of the unit.',
   ];
@@ -255,6 +255,22 @@ describe('rules', () => {
     expect(withImage[index]).toMatchObject({ image, x: 36, border: true });
     expect(withImage[index + 1]).toEqual({ type: 'blank' });
     expect(withImage.length).toBe(without.length + 2);
+  });
+});
+
+describe('Schedule A clause 2 and the space before clause 3', () => {
+  it('keeps clause 2, its blank line and all four remedies in one group', () => {
+    const group = build().find(
+      (block) => block.type === 'keep' && block.blocks[0]?.marker === '2.' && block.blocks[0]?.markerX === 0,
+    );
+    expect(group.blocks.map((block) => block.marker ?? block.type)).toEqual(['2.', 'blank', 'a.', 'b.', 'c.', 'd.']);
+  });
+
+  it('puts one blank line between remedy d and clause 3, and clause 3 outside the group', () => {
+    const blocks = build();
+    const at = blocks.findIndex((block) => block.marker === '3.' && block.markerX === 0);
+    expect(blocks[at - 1]).toEqual({ type: 'blank' });
+    expect(blocks[at - 2].type).toBe('keep');
   });
 });
 

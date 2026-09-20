@@ -34,3 +34,7 @@
 - The letterhead is centred across the text measure rather than left-aligned, so a narrower
   image (never enlarged past 1 px = 1 pt) sits in the middle of the header. One that fills the
   measure looks the same as before. The red `[Letterhead]` placeholder is centred too.
+- Four deliberate changes to the notice's wording and layout: a comma after the unit number in
+  clause 2 ("being 12, 45 Example Street"), the source's stray space removed from "commit an
+  offence, and" in clause 6a, Schedule A clause 2 kept together with its remedies so it never
+  splits across a page, and a blank line before Schedule A clause 3. SPEC.md records each.
