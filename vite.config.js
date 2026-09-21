@@ -19,6 +19,12 @@ import { defineConfig } from 'vite';
  * which inherits this policy. There is still no `connect-src`: the engine and its language data
  * are bundled, so nothing is fetched.
  *
+ * There is deliberately no `frame-ancestors`. Browsers ignore it in a `<meta>` policy (and GitHub
+ * Pages can't send headers), so it protected nothing, but Safari copies the page's policy onto
+ * the preview's `blob:` PDF and then enforces `frame-ancestors 'none'` against the page's own
+ * iframe: "Refused to load blob:… because it does not appear in the frame-ancestors directive",
+ * and the preview stays blank. Found 2026-09-21 in WebKit; don't add it back.
+ *
  * Injected at build time rather than written into index.html, because in dev Vite needs a
  * websocket for hot reload and an inline module preamble, both of which this policy blocks.
  */
@@ -33,7 +39,6 @@ const CSP = [
   "worker-src blob:",
   "base-uri 'none'",
   "form-action 'none'",
-  "frame-ancestors 'none'",
 ].join('; ');
 
 function cspPlugin() {

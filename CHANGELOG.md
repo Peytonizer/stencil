@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fixed the preview staying blank in Safari. The page's Content-Security-Policy carried
+  `frame-ancestors 'none'`, which browsers ignore in a `<meta>` policy but which Safari copies onto
+  the preview's `blob:` PDF and then enforces against the page's own iframe. It is removed; it never
+  protected anything, since GitHub Pages can't send headers. Found by reproducing it in WebKit.
+
 - Parking Breach Notice template: a one-page letter about a vehicle parked illegally on common
   property, with the wording of its source reproduced exactly (including its quirks). It takes the
   owner and property, the vehicle, the date it was seen, an optional rule excerpt and one to ten
