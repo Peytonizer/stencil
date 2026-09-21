@@ -87,7 +87,7 @@ const FIELDS = [
     type: 'text',
     section: 'recipient',
     required: false,
-    help: 'e.g. "C/- Example Property Management". Leave blank if not applicable.',
+    help: 'e.g. "Example Property Management". "C/O" is printed in front for you. Leave blank if not applicable.',
   },
   {
     id: 'address1',
@@ -295,6 +295,16 @@ const REMEDIES = [
   'The Owners Corporation care of the Managing Agent to be advised of the course of action to be taken.',
 ];
 
+/**
+ * The care-of line: "C/O " in front of what was typed (Matt, 2026-09-22). Someone who types the
+ * prefix anyway ("C/O …", or the older "C/- …") isn't given it twice.
+ */
+function careOfLine(values) {
+  const text = clean(values.careOf);
+  if (!text) return [];
+  return [para([plain(/^c\/[o-]/i.test(text) ? text : `C/O ${text}`)])];
+}
+
 function addressBlock(values) {
   const optionalLine = (id) => (clean(values[id]) ? [para([plain(clean(values[id]))])] : []);
   const emailLines = values.hasPropertyManager
@@ -308,7 +318,7 @@ function addressBlock(values) {
     para([valueRun(FIELD_BY_ID.get('noticeDate'), formatShortMonth(values.noticeDate))]),
     blank,
     para([value('ownerName', values)]),
-    ...optionalLine('careOf'),
+    ...careOfLine(values),
     para([value('address1', values)]),
     ...optionalLine('address2'),
     ...optionalLine('address3'),

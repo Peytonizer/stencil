@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rule Infringement Notice: "C/O " is printed in front of the care-of line, so the field takes just
+  the name ("Example Property Management"). A value that already starts "C/O" or "C/-" is left as
+  typed rather than given a second prefix.
 - Fixed the preview staying blank in Safari. The page's Content-Security-Policy carried
   `frame-ancestors 'none'`, which browsers ignore in a `<meta>` policy but which Safari copies onto
   the preview's `blob:` PDF and then enforces against the page's own iframe. It is removed; it never

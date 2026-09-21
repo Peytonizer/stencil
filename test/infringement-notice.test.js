@@ -124,11 +124,29 @@ describe('the letter heading', () => {
 
   it('omits the care-of line when blank and puts it after the name when given', () => {
     expect(texts(build()).slice(0, 5)).toEqual(['19 Sep 2026', '', 'Jane Example', '1 Example Road', '']);
-    expect(texts(build({ careOf: 'C/- Example Management' })).slice(2, 5)).toEqual([
+    expect(texts(build({ careOf: 'Example Management' })).slice(2, 5)).toEqual([
       'Jane Example',
-      'C/- Example Management',
+      'C/O Example Management',
       '1 Example Road',
     ]);
+  });
+
+  it('does not double a prefix the user typed themselves, whatever its case', () => {
+    for (const typed of ['C/O Example Management', 'c/o Example Management', 'C/- Example Management']) {
+      expect(texts(build({ careOf: typed }))[3]).toBe(typed);
+    }
+  });
+
+  it('trims the care-of text and prefixes it', () => {
+    expect(texts(build({ careOf: '  Example Management  ' }))[3]).toBe('C/O Example Management');
+  });
+
+  it('prefixes a name that only begins with the same letters', () => {
+    expect(texts(build({ careOf: 'Coastal Strata' }))[3]).toBe('C/O Coastal Strata');
+  });
+
+  it('gives no C/O line at all when the care-of text is blank or only spaces', () => {
+    expect(texts(build({ careOf: '   ' })).some((line) => line.startsWith('C/'))).toBe(false);
   });
 
   it('omits address lines 2 and 3 when blank and keeps them in order when given', () => {
