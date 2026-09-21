@@ -10,10 +10,10 @@
   line box, moving down the page.
 
   Block types (see SPEC.md, "Data shapes"):
-    para    { runs, x, align, size, keepWithNext }
-    item    { marker, markerX, markerBold, runs, x, align, size, keepWithNext }
-    blank   one empty line
-    image   { image, x, border, maxWidth, maxHeight }
+    para    { runs, x, align, size, lineSpacing, keepWithNext }
+    item    { marker, markerX, markerBold, runs, x, align, size, lineSpacing, keepWithNext }
+    blank   one empty line, or a gap of `height` pt
+    image   { image, x, align, border, borderWidth, maxWidth, maxHeight }
     keep    { blocks } — never split across pages
     letterhead { image } or { placeholder } — the header band of every page, outside the flow
 */
@@ -51,14 +51,17 @@ const centredInBand = (width) => LETTERHEAD.x + (LETTERHEAD.width - width) / 2;
 function prepare(block, fonts) {
   switch (block.type) {
     case 'blank': {
-      const height = leading(block.size ?? SIZE.body);
+      // A gap of an exact height is how a template reproduces Word's space after a paragraph.
+      const height = block.height ?? leading(block.size ?? SIZE.body);
       return { block, kind: 'blank', height, firstHeight: height };
     }
     case 'para':
     case 'item': {
       const size = block.size ?? SIZE.body;
       const x = block.x ?? 0;
-      const lead = leading(size);
+      // `lineSpacing` is Word's "multiple" line spacing (`w:line` over 240), 1 when the source
+      // says 240.
+      const lead = leading(size) * (block.lineSpacing ?? 1);
       const runs = block.runs.map((run) => ({ ...run, size }));
       const lines = wrapRuns(runs, fonts, MEASURE - x);
       return {
@@ -80,7 +83,10 @@ function prepare(block, fonts) {
         block.maxWidth ?? MEASURE - x,
         Math.min(block.maxHeight ?? IMAGE_MAX_HEIGHT, CONTENT_HEIGHT),
       );
-      return { block, kind: 'image', x, ...box, height: box.height, firstHeight: box.height };
+      // Centred across the space to the right of `x`; the source's anchored images are
+      // `positionH align center` relative to the margin.
+      const left = block.align === 'center' ? x + (MEASURE - x - box.width) / 2 : x;
+      return { block, kind: 'image', x: left, ...box, height: box.height, firstHeight: box.height };
     }
     case 'keep': {
       const items = block.blocks.map((child) => prepare(child, fonts));
@@ -205,6 +211,7 @@ export function layoutBlocks(blocks, fonts) {
       width: item.width,
       height: item.height,
       border: Boolean(item.block.border),
+      borderWidth: item.block.borderWidth ?? 1,
     });
     y -= item.height;
   }

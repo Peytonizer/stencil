@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Parking Breach Notice template: a one-page letter about a vehicle parked illegally on common
+  property, with the wording of its source reproduced exactly (including its quirks). It takes the
+  owner and property, the vehicle, the date it was seen, an optional rule excerpt and one to ten
+  photos as evidence, and works with the screenshot reader. The source's "[Suburb, State,
+  Postcode]" is three fields so the reader fills the suburb and the rest stay required.
+- The PDF engine gained what this letter needs: Word's paragraph spacing (an exact-height gap and a
+  line-spacing multiple, since the source spaces paragraphs by 8 pt rather than by empty
+  lines), a centred image, and a border of any width (the rule excerpt is 3 pt). Dates can be written
+  in full ("3 September 2026").
+
 - Screenshot reader: paste or choose a screenshot of the strata
   software's Lot/Owner screen and the plan, lot, unit, street address, suburb and owner's name
   and email are filled in, each marked until edited. It runs entirely in the tab (tesseract.js,

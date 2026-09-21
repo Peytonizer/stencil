@@ -4,9 +4,10 @@
 */
 
 import { infringementNotice } from './infringement-notice.js';
+import { parkingBreachNotice } from './parking-breach-notice.js';
 import { isFilled } from './helpers.js';
 
-export const TEMPLATES = [infringementNotice];
+export const TEMPLATES = [infringementNotice, parkingBreachNotice];
 
 export function getTemplate(id) {
   return TEMPLATES.find((template) => template.id === id) ?? null;

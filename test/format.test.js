@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { addDays, formatDate, formatShortMonth, todayInCanberra } from '../src/format.js';
+import { addDays, formatDate, formatLongMonth, formatShortMonth, todayInCanberra } from '../src/format.js';
 
 describe('formatDate', () => {
   it('writes DD/MM/YYYY', () => {
@@ -10,6 +10,38 @@ describe('formatDate', () => {
   it('returns an empty string for an empty or malformed date', () => {
     expect(formatDate('')).toBe('');
     expect(formatDate('26/09/2026')).toBe('');
+  });
+});
+
+describe('formatLongMonth', () => {
+  it('writes D MMMM YYYY with no leading zero on the day', () => {
+    expect(formatLongMonth('2026-09-03')).toBe('3 September 2026');
+    expect(formatLongMonth('2026-12-25')).toBe('25 December 2026');
+  });
+
+  it('spells every month in full regardless of locale', () => {
+    const months = Array.from({ length: 12 }, (_, i) =>
+      formatLongMonth(`2026-${String(i + 1).padStart(2, '0')}-01`).split(' ')[1],
+    );
+    expect(months).toEqual([
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]);
+  });
+
+  it('returns an empty string for an empty or malformed date', () => {
+    expect(formatLongMonth('')).toBe('');
+    expect(formatLongMonth('2026-13-01')).toBe('');
   });
 });
 

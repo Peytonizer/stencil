@@ -9,17 +9,21 @@ common seal — and stencil typesets the finished notice in your browser. Part o
 **Templates**
 
 - Rule Infringement Notice — Unit Titles (Management) Act 2011, s 109.
+- Parking Breach Notice — a letter to an owner about a vehicle parked illegally on common
+  property: the owner and lot, the vehicle and when it was seen, an optional excerpt of the rule,
+  and one or more photos as evidence.
 
 The download button stays disabled until every required field is filled; beneath it, a list
 names the fields still outstanding, and clicking one jumps to it.
 
-Images (the rule excerpt, the seal, the letterhead) can be chosen as a file or pasted straight
+Images (the rule excerpt, the seal, the letterhead, the evidence photos) can be chosen as a file or pasted straight
 from the clipboard, so a Snipping Tool capture needs no saving first: use the "Paste from
 clipboard" button, or click in the image's row and press Ctrl+V.
 
 **Screenshot reader.** Choose or paste a screenshot of the strata software's Lot/Owner screen
 and the plan number, building name, lot, unit, street address, suburb and the owner's name and
-email are filled in. Each is marked until you edit it, so check every one against the screenshot:
+email are filled in, on either template (the parking notice also asks for the state and postcode,
+which the screen doesn't show). Each is marked until you edit it, so check every one against the screenshot:
 it reads text from an image and can get a digit wrong. Anything it isn't at least half sure of is
 left blank and listed instead. The reading is done in your browser by a bundled copy of
 Tesseract, run in a worker; it loads (about 8 MB) the first time you give it a screenshot, and

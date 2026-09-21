@@ -5,6 +5,7 @@
 
   - The notice date in the letter heading is `D MMM YYYY` ("19 Sep 2026"), and the confirm-by
     date in the remedies is `DD/MM/YYYY`. Both follow the placeholders in the source template.
+    The parking notice's observed date is `D MMMM YYYY` ("3 September 2026").
   - "Today" is today in Canberra, not today in the browser's time zone. A notice is dated the
     day it is issued under ACT law, and a manager working from Perth — or from a laptop still
     set to somewhere else — must not put yesterday's date on it. `Australia/Canberra` follows
@@ -18,6 +19,21 @@
 const CANBERRA = 'Australia/Canberra';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const LONG_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 /** Today in the ACT, as `YYYY-MM-DD` — the shape an `<input type="date">` wants. */
 export function todayInCanberra(now = new Date()) {
@@ -50,6 +66,16 @@ export function formatShortMonth(isoDate) {
   const p = split(isoDate);
   if (!p || p.month < 1 || p.month > 12) return '';
   return `${p.day} ${MONTHS[p.month - 1]} ${p.year}`;
+}
+
+/**
+ * `YYYY-MM-DD` to `D MMMM YYYY`, e.g. `3 September 2026`. The parking notice's `[Date DD MONTH
+ * YYYY]`; the day is not padded, as with `formatShortMonth`. Returns '' for an empty or malformed date.
+ */
+export function formatLongMonth(isoDate) {
+  const p = split(isoDate);
+  if (!p || p.month < 1 || p.month > 12) return '';
+  return `${p.day} ${LONG_MONTHS[p.month - 1]} ${p.year}`;
 }
 
 /**

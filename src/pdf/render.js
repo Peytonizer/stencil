@@ -62,14 +62,15 @@ export async function buildPdf(template, values) {
           height: op.height,
         });
         if (op.border) {
-          // A 1 pt black rule on the image's own edge, as the source draws round a rule excerpt.
+          // A black rule on the image's own edge, as the source draws round a rule excerpt: 1 pt
+          // unless the block says otherwise (the parking notice's excerpt is 3 pt).
           page.drawRectangle({
             x: op.x,
             y: op.y,
             width: op.width,
             height: op.height,
             borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
+            borderWidth: op.borderWidth,
           });
         }
       }

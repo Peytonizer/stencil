@@ -96,6 +96,32 @@ const SAMPLES = {
     seal: fakePng(240, 200, [190, 210, 235]),
     letterhead: fakePng(900, 90, [246, 193, 206]),
   }),
+  'parking-breach-notice': () => ({
+    ownerName: 'Jane Example',
+    ownerEmail: 'jane@example.com',
+    pmEmail: 'pm@example.com',
+    unitsPlanNumber: '9999',
+    buildingName: 'Example House',
+    unitNumber: '12',
+    lotNumber: '34',
+    streetAddress: '45 Example Street',
+    suburb: 'Braddon',
+    state: 'ACT',
+    postcode: '2612',
+    parkingDetails: 'in the visitor bay',
+    observedDate: '2026-09-03',
+    vehicleDescription: 'white Toyota Corolla sedan',
+    plateState: 'NSW',
+    rego: 'ABC123',
+    observationDetails: 'blocking the loading dock',
+    ruleExcerpt: fakePng(771, 444, [240, 240, 240]),
+    evidence: [
+      { image: fakePng(600, 800, [200, 215, 200]) },
+      { image: fakePng(800, 600, [215, 200, 200]) },
+    ],
+    strataManagerName: 'Sam Example',
+    letterhead: fakePng(900, 90, [246, 193, 206]),
+  }),
 };
 
 /** Each page of a PDF as its own one-page file. */

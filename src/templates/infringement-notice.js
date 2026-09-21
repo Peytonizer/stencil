@@ -15,7 +15,7 @@
 
 import { addDays, formatDate, formatShortMonth, todayInCanberra } from '../format.js';
 import { SIZE, SEAL_BOX } from '../pdf/geometry.js';
-import { clean, valueRun } from './helpers.js';
+import { clean, forFilename, valueRun } from './helpers.js';
 
 /*
   Indents, in points from the left margin, resolved from the source's numbering.xml (SPEC.md,
@@ -482,9 +482,6 @@ function sealBlock(values) {
   // Kept together so the seal is never stranded on a page of its own.
   return { type: 'keep', blocks };
 }
-
-/** Characters a filename can't carry on Windows or macOS become hyphens. */
-const forFilename = (text) => clean(text).replace(/[\\/:*?"<>|\p{Cc}]/gu, '-');
 
 export const infringementNotice = {
   id: 'infringement-notice',

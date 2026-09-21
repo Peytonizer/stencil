@@ -125,6 +125,27 @@ describe('hard line breaks', () => {
   });
 });
 
+describe('spacing set by a template', () => {
+  it('steps down by the leading times lineSpacing', () => {
+    const [page] = layoutBlocks([lines(3, { lineSpacing: 278 / 240 })], fonts);
+    const ys = texts(page).map((op) => op.y);
+    expect(ys[0] - ys[1]).toBeCloseTo((L12 * 278) / 240, 6);
+    expect(ys[1] - ys[2]).toBeCloseTo((L12 * 278) / 240, 6);
+  });
+
+  it('takes a blank of an exact height as a gap of that many points', () => {
+    const [page] = layoutBlocks([lines(1), { type: 'blank', height: 8 }, lines(1)], fonts);
+    const [first, second] = texts(page).map((op) => op.y);
+    expect(first - second).toBeCloseTo(L12 + 8, 6);
+  });
+
+  it('drops a gap at the top of a page like any other blank', () => {
+    const pages = layoutBlocks([lines(LINES_PER_PAGE), { type: 'blank', height: 8 }, lines(1)], fonts);
+    expect(pages).toHaveLength(2);
+    expect(texts(pages[1])[0].y).toBeCloseTo(CONTENT.top - 0.95 * 12, 6);
+  });
+});
+
 describe('blanks', () => {
   it('is one line at 12 pt leading', () => {
     const [page] = layoutBlocks([lines(1), blank, lines(1)], fonts);
@@ -255,9 +276,37 @@ describe('images', () => {
     expect(pages[1].ops[0].y).toBeCloseTo(CONTENT.top - 200, 6);
   });
 
-  it('asks for a border when the block does', () => {
-    const [page] = layoutBlocks([{ type: 'image', image: fakeImage(50, 50), x: 0, border: true }], fonts);
-    expect(page.ops[0].border).toBe(true);
+  it('asks for a border when the block does, 1 pt unless it says how wide', () => {
+    const [page] = layoutBlocks(
+      [
+        { type: 'image', image: fakeImage(50, 50), x: 0, border: true },
+        { type: 'image', image: fakeImage(50, 50), x: 0, border: true, borderWidth: 3 },
+      ],
+      fonts,
+    );
+    expect(page.ops[0]).toMatchObject({ border: true, borderWidth: 1 });
+    expect(page.ops[1]).toMatchObject({ border: true, borderWidth: 3 });
+  });
+
+  it('centres across the measure when asked, and stays at x otherwise', () => {
+    const [page] = layoutBlocks(
+      [
+        { type: 'image', image: fakeImage(100, 20), x: 0, align: 'center' },
+        { type: 'image', image: fakeImage(100, 20), x: 0 },
+      ],
+      fonts,
+    );
+    expect(page.ops[0].x).toBeCloseTo(CONTENT.left + (MEASURE - 100) / 2, 6);
+    expect(page.ops[1].x).toBeCloseTo(CONTENT.left, 6);
+  });
+
+  it('centres a scaled-down image by its scaled width', () => {
+    const [page] = layoutBlocks(
+      [{ type: 'image', image: fakeImage(771, 444), x: 0, align: 'center', maxWidth: 362.2 }],
+      fonts,
+    );
+    expect(page.ops[0].width).toBeCloseTo(362.2, 6);
+    expect(page.ops[0].x).toBeCloseTo(CONTENT.left + (MEASURE - 362.2) / 2, 6);
   });
 });
 
