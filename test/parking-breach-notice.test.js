@@ -1,6 +1,7 @@
 import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
+import { todayInCanberra } from '../src/format.js';
 import { layoutBlocks } from '../src/pdf/layout.js';
 import { buildPdf } from '../src/pdf/render.js';
 import { TEMPLATES, defaultValues, describeMissing, getTemplate, missingFields } from '../src/templates/index.js';
@@ -8,6 +9,7 @@ import { parkingBreachNotice as template } from '../src/templates/parking-breach
 import { fakeImage, loadFonts, realImage } from './helpers.js';
 
 const full = (extra = {}) => ({
+  noticeDate: '2026-09-21',
   ownerName: 'Jane Example',
   ownerEmail: 'jane@example.com',
   pmEmail: '',
@@ -47,13 +49,14 @@ describe('the wording', () => {
   // The scrubbed source's text with its placeholders filled in, quirks included.
   it('reads as the source does, top to bottom', () => {
     expect(texts(build())).toEqual([
-      'Dear Jane Example',
+      '21 Sep 2026',
+      'Jane Example',
       'Lot 34, Unit 12 of 45 Example Street',
       'Braddon ACT 2612',
       'Email to: jane@example.com',
       'Re UP 9999 ‘Example House’ Breach of Rules – Illegal Parking',
       'Dear Jane Example,',
-      'We wish to bring to your attention a breach of rules involving the occupants of Unit 12/45 Example Street parking illegally',
+      'We wish to bring to your attention a breach of rules involving the occupants of Unit 12/45 Example Street parking illegally.',
       'On 3 September 2026 the building manager observed that a white Toyota Corolla sedan bearing NSW Number Plates “ABC123” was parked illegally on common property. This is in breach of Owners Corporation Rules 13.2 (c) ‘Parking of Vehicles’.',
       'Please see evidence of the breach below.',
       'Sam Example',
@@ -65,11 +68,11 @@ describe('the wording', () => {
     expect(missingRuns(build())).toEqual([]);
   });
 
-  it('keeps the source quirks: "Dear" opens the address block with no comma, and the opening paragraph has no full stop', () => {
+  it('changes two of the source\'s quirks: no "Dear" in the address block, and a full stop ending the opening paragraph', () => {
     const all = texts(build());
-    expect(all[0]).toBe('Dear Jane Example');
-    expect(all[5]).toBe('Dear Jane Example,');
-    expect(all[6].endsWith('parking illegally')).toBe(true);
+    expect(all[1]).toBe('Jane Example');
+    expect(all.filter((line) => line.startsWith('Dear'))).toEqual(['Dear Jane Example,']);
+    expect(all[7].endsWith('parking illegally.')).toBe(true);
   });
 
   it('sets the heading in bold throughout and the manager name in bold', () => {
@@ -83,8 +86,8 @@ describe('the wording', () => {
   });
 
   it('trims what the user typed', () => {
-    expect(texts(build({ ownerName: '  Jane Example  ', rego: ' ABC123 ' }))[0]).toBe('Dear Jane Example');
-    expect(texts(build({ rego: ' ABC123 ' }))[7]).toContain('“ABC123”');
+    expect(texts(build({ ownerName: '  Jane Example  ' }))[1]).toBe('Jane Example');
+    expect(texts(build({ rego: ' ABC123 ' }))[8]).toContain('“ABC123”');
   });
 });
 
@@ -105,11 +108,11 @@ describe('the email line', () => {
 });
 
 describe('the optional parking details', () => {
-  const opening = (extra) => texts(build(extra))[6];
-  const numbered = (extra) => texts(build(extra))[7];
+  const opening = (extra) => texts(build(extra))[7];
+  const numbered = (extra) => texts(build(extra))[8];
 
-  it('adds the opening details after "parking illegally", and still no full stop', () => {
-    expect(opening({ parkingDetails: 'in the visitor bay' })).toMatch(/parking illegally in the visitor bay$/);
+  it('adds the opening details after "parking illegally", before the full stop', () => {
+    expect(opening({ parkingDetails: 'in the visitor bay' })).toMatch(/parking illegally in the visitor bay\.$/);
   });
 
   it('adds the numbered paragraph details before its full stop', () => {
@@ -118,8 +121,8 @@ describe('the optional parking details', () => {
     );
   });
 
-  it('leaves no stray space or full stop when both are blank', () => {
-    expect(opening()).not.toMatch(/\s$/);
+  it('leaves no stray space or doubled full stop when both are blank', () => {
+    expect(opening()).toMatch(/parking illegally\.$/);
     expect(numbered()).toContain('on common property. This is');
     expect(numbered()).not.toContain('  ');
   });
@@ -287,8 +290,9 @@ describe('missingFields and describeMissing', () => {
     ]);
   });
 
-  it('flags a missing observed date', () => {
+  it('flags a missing observed date and a missing letter date', () => {
     expect(missingFields(template, full({ observedDate: '' }))).toEqual(['observedDate']);
+    expect(missingFields(template, full({ noticeDate: '' }))).toEqual(['noticeDate']);
   });
 });
 
@@ -299,6 +303,10 @@ describe('defaults', () => {
     expect(values.ruleExcerpt).toBeNull();
     expect(values.letterhead).toBeNull();
     expect(values.observedDate).toBe('');
+  });
+
+  it('dates the letter today in Canberra', () => {
+    expect(defaultValues(template).noticeDate).toBe(todayInCanberra());
   });
 
   it('gives the screenshot reader the same field ids the first template has', () => {
@@ -329,15 +337,12 @@ describe('the definition', () => {
     for (const field of template.fields) expect(sections.has(field.section), field.id).toBe(true);
   });
 
-  it('names the download as today\'s date in Canberra, the units plan and the lot', () => {
-    // 2026-09-20 15:00 UTC is 01:00 on the 21st in Canberra.
-    expect(template.filename(full(), new Date('2026-09-20T15:00:00Z'))).toBe(
-      '20260921 UP9999 Parking Breach Notice - Lot 34.pdf',
-    );
+  it('names the download as the letter date, the units plan and the lot', () => {
+    expect(template.filename(full())).toBe('20260921 UP9999 Parking Breach Notice - Lot 34.pdf');
   });
 
   it('cannot put a path separator into the filename', () => {
-    expect(template.filename(full({ lotNumber: '12/3', unitsPlanNumber: 'A:B' }), new Date('2026-09-21T00:00:00Z'))).toBe(
+    expect(template.filename(full({ lotNumber: '12/3', unitsPlanNumber: 'A:B' }))).toBe(
       '20260921 UPA-B Parking Breach Notice - Lot 12-3.pdf',
     );
   });

@@ -3,10 +3,11 @@
   property, quoting the rule and attaching photos of the breach.
 
   Unlike the Rule Infringement Notice this source is a plain letter, not a formal notice. It has
-  no numbered schedule, no seal and no date of its own. Its wording is the scrubbed source's,
-  character for character, quirks included: "Dear [Owner Name]" opens the address block as well
-  as the salutation, the opening paragraph has no full stop, and the rule cited is fixed at
-  "13.2 (c) 'Parking of Vehicles'". SPEC.md records what was decided beyond the source.
+  no numbered schedule and no seal. Its wording is the scrubbed source's, character for character,
+  and the rule cited is fixed at "13.2 (c) 'Parking of Vehicles'". The deliberate changes
+  (Matt, 2026-09-21), each recorded in SPEC.md: a letter date above the address, "Dear" dropped from
+  the address block's first line, where the source repeats the salutation, and a full stop added to
+  the opening paragraph.
 
   Where the source's text has one placeholder standing for several facts, the facts are separate
   fields so the screenshot reader can fill what it sees and the rest stay required: the source's
@@ -18,7 +19,7 @@
   line. Every conditional piece of wording is in `build()`.
 */
 
-import { formatLongMonth, todayInCanberra } from '../format.js';
+import { formatLongMonth, formatShortMonth, todayInCanberra } from '../format.js';
 import { SIZE, leading, tw } from '../pdf/geometry.js';
 import { clean, forFilename, valueRun } from './helpers.js';
 
@@ -58,6 +59,16 @@ const SECTIONS = [
 ];
 
 const FIELDS = [
+  {
+    id: 'noticeDate',
+    label: 'Date of the letter',
+    type: 'date',
+    section: 'letter',
+    required: true,
+    default: () => todayInCanberra(),
+    placeholder: '[Date]',
+    help: 'The date the letter is sent.',
+  },
   {
     id: 'letterhead',
     label: 'Letterhead',
@@ -166,7 +177,7 @@ const FIELDS = [
     type: 'text',
     section: 'breach',
     required: false,
-    help: 'Follows "…occupants of Unit 12/45 Example Street parking illegally". Leave blank for none.',
+    help: 'Follows "…occupants of Unit 12/45 Example Street parking illegally". Leave off the full stop. Leave blank for none.',
   },
   {
     id: 'observedDate',
@@ -280,9 +291,10 @@ const optionalAfterSpace = (id, values) => (clean(values[id]) ? [plain(` ${clean
 function addressBlock(values) {
   const emails = [plain('Email to: '), value('ownerEmail', values), ...optionalAfterSpace('pmEmail', values)];
   return [
-    // "Dear [Owner Name]" opens the address block in the source, without a comma, as well as
-    // heading the salutation below. Reproduced as it is.
-    ...paragraph([plain('Dear '), value('ownerName', values)]),
+    // The source's first address line reads "Dear [Owner Name]", repeating the salutation
+    // below it; "Dear" is dropped (Matt, 2026-09-21).
+    ...paragraph([valueRun(FIELD_BY_ID.get('noticeDate'), formatShortMonth(values.noticeDate))]),
+    ...paragraph([value('ownerName', values)]),
     ...paragraph([
       plain('Lot '),
       value('lotNumber', values),
@@ -313,7 +325,7 @@ function letterBody(values) {
       bold(' Breach of Rules – Illegal Parking'),
     ]),
     ...paragraph([plain('Dear '), value('ownerName', values), plain(',')]),
-    // The source ends this paragraph without a full stop.
+    // The source ends this paragraph without a full stop; one is added (Matt, 2026-09-21).
     ...paragraph([
       plain('We wish to bring to your attention a breach of rules involving the occupants of Unit '),
       value('unitNumber', values),
@@ -321,6 +333,7 @@ function letterBody(values) {
       value('streetAddress', values),
       plain(' parking illegally'),
       ...optionalAfterSpace('parkingDetails', values),
+      plain('.'),
     ]),
     {
       type: 'item',
@@ -400,12 +413,9 @@ export const parkingBreachNotice = {
   sections: SECTIONS,
   fields: FIELDS,
 
-  /**
-   * "20260921 UP9999 Parking Breach Notice - Lot 34.pdf". The letter has no date of its own, so
-   * the filename carries today's, in Canberra, so the notices sort by when they were written.
-   */
-  filename(values, now = new Date()) {
-    const date = todayInCanberra(now).replaceAll('-', '');
+  /** "20260921 UP9999 Parking Breach Notice - Lot 34.pdf": the date is the letter's, as YYYYMMDD. */
+  filename(values) {
+    const date = clean(values.noticeDate).replaceAll('-', '');
     return `${date} UP${forFilename(values.unitsPlanNumber)} Parking Breach Notice - Lot ${forFilename(values.lotNumber)}.pdf`;
   },
 

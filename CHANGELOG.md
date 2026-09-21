@@ -11,6 +11,10 @@
   line-spacing multiple, since the source spaces paragraphs by 8 pt rather than by empty
   lines), a centred image, and a border of any width (the rule excerpt is 3 pt). Dates can be written
   in full ("3 September 2026").
+- Parking Breach Notice: a letter date (default today in Canberra) is printed above the owner's
+  name and dates the download's filename. Two quirks of the source are fixed: the address block's
+  first line no longer reads "Dear [Owner Name]", repeating the salutation, and the opening
+  paragraph ends with a full stop.
 
 - Screenshot reader: paste or choose a screenshot of the strata
   software's Lot/Owner screen and the plan, lot, unit, street address, suburb and owner's name

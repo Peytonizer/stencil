@@ -97,6 +97,7 @@ const SAMPLES = {
     letterhead: fakePng(900, 90, [246, 193, 206]),
   }),
   'parking-breach-notice': () => ({
+    noticeDate: '2026-09-21',
     ownerName: 'Jane Example',
     ownerEmail: 'jane@example.com',
     pmEmail: 'pm@example.com',
