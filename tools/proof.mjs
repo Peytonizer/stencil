@@ -99,6 +99,9 @@ const SAMPLES = {
   'parking-breach-notice': () => ({
     noticeDate: '2026-09-21',
     ownerName: 'Jane Example',
+    addressToOccupier: false,
+    careOf: 'Example Property Management',
+    addresseeName: 'Jane Example',
     ownerEmail: 'jane@example.com',
     pmEmail: 'pm@example.com',
     unitsPlanNumber: '9999',

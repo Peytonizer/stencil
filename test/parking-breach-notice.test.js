@@ -11,6 +11,9 @@ import { fakeImage, loadFonts, realImage } from './helpers.js';
 const full = (extra = {}) => ({
   noticeDate: '2026-09-21',
   ownerName: 'Jane Example',
+  addressToOccupier: false,
+  careOf: '',
+  addresseeName: 'Jane Example',
   ownerEmail: 'jane@example.com',
   pmEmail: '',
   unitsPlanNumber: '9999',
@@ -88,6 +91,67 @@ describe('the wording', () => {
   it('trims what the user typed', () => {
     expect(texts(build({ ownerName: '  Jane Example  ' }))[1]).toBe('Jane Example');
     expect(texts(build({ rego: ' ABC123 ' }))[8]).toContain('“ABC123”');
+  });
+});
+
+describe('addressing the letter', () => {
+  it('keeps the addressee separate from the owner name, for when they differ', () => {
+    const all = texts(build({ ownerName: 'Jane Example', addresseeName: 'John Occupier' }));
+    expect(all[1]).toBe('Jane Example');
+    expect(all).toContain('Dear John Occupier,');
+  });
+
+  it('addresses "The occupier of unit" instead of the owner\'s name when ticked', () => {
+    expect(texts(build({ addressToOccupier: true }))[1]).toBe('The occupier of unit');
+  });
+
+  it('does not require or show a placeholder for the owner name once "occupier" is ticked', () => {
+    const values = full({ addressToOccupier: true, ownerName: '' });
+    expect(missingFields(template, values)).toEqual([]);
+    expect(missingRuns(template.build(values))).toEqual([]);
+  });
+
+  it('still requires and shows the owner name when "occupier" is not ticked', () => {
+    const values = full({ ownerName: '' });
+    expect(missingFields(template, values)).toEqual(['ownerName']);
+    expect(missingRuns(template.build(values)).map((run) => run.text)).toContain('[Owner Name]');
+  });
+
+  it('requires the addressee independently of the occupier tickbox', () => {
+    expect(missingFields(template, full({ addresseeName: '' }))).toEqual(['addresseeName']);
+    expect(missingFields(template, full({ addressToOccupier: true, ownerName: '', addresseeName: '' }))).toEqual([
+      'addresseeName',
+    ]);
+  });
+});
+
+const ownerIndex = (all) => all.indexOf('Jane Example');
+
+describe('the care-of line', () => {
+  it('is left out, with no line at all, when blank', () => {
+    expect(build().some((block) => textOf(block).startsWith('C/O'))).toBe(false);
+  });
+
+  it('prints "C/O " in front of what was typed, right after the owner\'s line', () => {
+    const all = texts(build({ careOf: 'Example Management' }));
+    expect(all[ownerIndex(all) + 1]).toBe('C/O Example Management');
+  });
+
+  it('does not double a prefix the user typed themselves, whatever its case', () => {
+    for (const typed of ['C/O Example Management', 'c/o Example Management', 'C/- Example Management']) {
+      const all = texts(build({ careOf: typed }));
+      expect(all[ownerIndex(all) + 1]).toBe(typed);
+    }
+  });
+
+  it('is never required', () => {
+    expect(missingFields(template, full({ careOf: '' }))).toEqual([]);
+  });
+
+  it('still follows "The occupier of unit" when that is used instead of a name', () => {
+    const all = texts(build({ addressToOccupier: true, careOf: 'Example Management' }));
+    const occupierIndex = all.indexOf('The occupier of unit');
+    expect(all[occupierIndex + 1]).toBe('C/O Example Management');
   });
 });
 
@@ -247,7 +311,7 @@ describe('unfilled fields', () => {
 
   it('shows no placeholder for an optional field', () => {
     const shown = missingRuns(template.build(defaultValues(template))).map((run) => run.text);
-    for (const id of ['pmEmail', 'parkingDetails', 'observationDetails', 'ruleExcerpt']) {
+    for (const id of ['pmEmail', 'parkingDetails', 'observationDetails', 'ruleExcerpt', 'careOf']) {
       expect(template.fields.find((field) => field.id === id).placeholder, id).toBeUndefined();
     }
     expect(shown).not.toContain('undefined');
@@ -303,6 +367,13 @@ describe('defaults', () => {
     expect(values.ruleExcerpt).toBeNull();
     expect(values.letterhead).toBeNull();
     expect(values.observedDate).toBe('');
+  });
+
+  it('starts with no addressee, no care-of and "occupier" unticked', () => {
+    const values = defaultValues(template);
+    expect(values.addresseeName).toBe('');
+    expect(values.careOf).toBe('');
+    expect(values.addressToOccupier).toBe(false);
   });
 
   it('dates the letter today in Canberra', () => {

@@ -26,3 +26,18 @@ export function valueRun(field, value, style = {}) {
 
 /** Characters a filename can't carry on Windows or macOS become hyphens. */
 export const forFilename = (text) => clean(text).replace(/[\\/:*?"<>|\p{Cc}]/gu, '-');
+
+/** True when `text` already starts with a care-of prefix ("C/O", or the older "C/-"), so it is
+ *  not given a second one. Case insensitive: a person typing doesn't reliably capitalise it. */
+const CARE_OF_PREFIX = /^c\/[o-]/i;
+
+/**
+ * A care-of value with "C/O " in front, unless the user already typed a prefix themselves (Matt,
+ * 2026-09-22). Shared by every template with a care-of field, so the same habits (typing "C/-",
+ * or "C/O" already) are recognised everywhere rather than on one form only.
+ */
+export function careOfValue(value) {
+  const text = clean(value);
+  if (!text) return '';
+  return CARE_OF_PREFIX.test(text) ? text : `C/O ${text}`;
+}

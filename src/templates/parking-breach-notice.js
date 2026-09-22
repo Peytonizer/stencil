@@ -4,10 +4,13 @@
 
   Unlike the Rule Infringement Notice this source is a plain letter, not a formal notice. It has
   no numbered schedule and no seal. Its wording is the scrubbed source's, character for character,
-  and the rule cited is fixed at "13.2 (c) 'Parking of Vehicles'". The deliberate changes
-  (Matt, 2026-09-21), each recorded in SPEC.md: a letter date above the address, "Dear" dropped from
-  the address block's first line, where the source repeats the salutation, and a full stop added to
-  the opening paragraph.
+  and the rule cited is fixed at "13.2 (c) 'Parking of Vehicles'". The deliberate changes, each
+  recorded in SPEC.md: a letter date above the address, "Dear" dropped from the address block's
+  first line, where the source repeats the salutation, and a full stop added to the opening
+  paragraph (Matt, 2026-09-21); an optional care-of line, an addressee ("Dear …") field kept
+  separate from the owner's name, and a tickbox to address the letter to "The occupier of unit"
+  instead of a name (Matt, 2026-09-22). None of these three is in the source, which has neither a
+  care-of line nor any way to address an unnamed occupier.
 
   Where the source's text has one placeholder standing for several facts, the facts are separate
   fields so the screenshot reader can fill what it sees and the rest stay required: the source's
@@ -21,7 +24,7 @@
 
 import { formatLongMonth, formatShortMonth, todayInCanberra } from '../format.js';
 import { SIZE, leading, tw } from '../pdf/geometry.js';
-import { clean, forFilename, valueRun } from './helpers.js';
+import { careOfValue, clean, forFilename, valueRun } from './helpers.js';
 
 /** `w:line` 278 over the 240 that means single spacing (docDefaults). */
 const LINE_SPACING = 278 / 240;
@@ -83,9 +86,36 @@ const FIELDS = [
     label: 'Owner name',
     type: 'text',
     section: 'recipient',
-    required: true,
+    required: (values) => !values.addressToOccupier,
+    showIf: (values) => !values.addressToOccupier,
     placeholder: '[Owner Name]',
-    help: 'As recorded on the roll.',
+    help: 'As recorded on the roll. Printed in the address block.',
+  },
+  {
+    id: 'addressToOccupier',
+    label: 'Address to "The occupier of unit" instead of a name',
+    type: 'checkbox',
+    section: 'recipient',
+    required: false,
+    default: false,
+    help: "Use when the owner's name isn't known. Replaces the owner name line in the address block.",
+  },
+  {
+    id: 'careOf',
+    label: 'Care of',
+    type: 'text',
+    section: 'recipient',
+    required: false,
+    help: 'e.g. "Example Property Management". "C/O" is printed in front for you. Leave blank if not applicable.',
+  },
+  {
+    id: 'addresseeName',
+    label: 'Addressee ("Dear …")',
+    type: 'text',
+    section: 'recipient',
+    required: true,
+    placeholder: '[Addressee]',
+    help: "Who the letter opens with. Usually the owner's name, but not always, e.g. when it's addressed to the occupier.",
   },
   {
     id: 'ownerEmail',
@@ -288,13 +318,25 @@ const quotedBuilding = (values, style) => [
 /** A field's text with a space before it, or nothing when it is blank (the optional details). */
 const optionalAfterSpace = (id, values) => (clean(values[id]) ? [plain(` ${clean(values[id])}`)] : []);
 
+/** The address block's name line: the owner's name, or the fixed "The occupier of unit" when the
+ *  owner isn't named (Matt, 2026-09-22). Not in the source, which has no such choice. */
+const ownerLine = (values) =>
+  values.addressToOccupier ? paragraph([plain('The occupier of unit')]) : paragraph([value('ownerName', values)]);
+
+/** The optional care-of line, straight after the name (Matt, 2026-09-22), as the first template's. */
+function careOfLine(values) {
+  const text = careOfValue(values.careOf);
+  return text ? paragraph([plain(text)]) : [];
+}
+
 function addressBlock(values) {
   const emails = [plain('Email to: '), value('ownerEmail', values), ...optionalAfterSpace('pmEmail', values)];
   return [
     // The source's first address line reads "Dear [Owner Name]", repeating the salutation
     // below it; "Dear" is dropped (Matt, 2026-09-21).
     ...paragraph([valueRun(FIELD_BY_ID.get('noticeDate'), formatShortMonth(values.noticeDate))]),
-    ...paragraph([value('ownerName', values)]),
+    ...ownerLine(values),
+    ...careOfLine(values),
     ...paragraph([
       plain('Lot '),
       value('lotNumber', values),
@@ -324,7 +366,9 @@ function letterBody(values) {
       ...quotedBuilding(values, { bold: true }),
       bold(' Breach of Rules – Illegal Parking'),
     ]),
-    ...paragraph([plain('Dear '), value('ownerName', values), plain(',')]),
+    // Its own field, separate from the address block's owner line (Matt, 2026-09-22): the
+    // addressee isn't always the owner, e.g. a letter to "The occupier" still opens "Dear …,".
+    ...paragraph([plain('Dear '), value('addresseeName', values), plain(',')]),
     // The source ends this paragraph without a full stop; one is added (Matt, 2026-09-21).
     ...paragraph([
       plain('We wish to bring to your attention a breach of rules involving the occupants of Unit '),

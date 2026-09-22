@@ -15,7 +15,7 @@
 
 import { addDays, formatDate, formatShortMonth, todayInCanberra } from '../format.js';
 import { SIZE, SEAL_BOX } from '../pdf/geometry.js';
-import { clean, forFilename, valueRun } from './helpers.js';
+import { careOfValue, clean, forFilename, valueRun } from './helpers.js';
 
 /*
   Indents, in points from the left margin, resolved from the source's numbering.xml (SPEC.md,
@@ -295,14 +295,10 @@ const REMEDIES = [
   'The Owners Corporation care of the Managing Agent to be advised of the course of action to be taken.',
 ];
 
-/**
- * The care-of line: "C/O " in front of what was typed (Matt, 2026-09-22). Someone who types the
- * prefix anyway ("C/O …", or the older "C/- …") isn't given it twice.
- */
+/** The care-of line: "C/O " in front of what was typed, via the shared helper. */
 function careOfLine(values) {
-  const text = clean(values.careOf);
-  if (!text) return [];
-  return [para([plain(/^c\/[o-]/i.test(text) ? text : `C/O ${text}`)])];
+  const text = careOfValue(values.careOf);
+  return text ? [para([plain(text)])] : [];
 }
 
 function addressBlock(values) {

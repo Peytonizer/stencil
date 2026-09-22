@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Parking Breach Notice: an optional care-of line ("C/O " printed in front, as the Rule
+  Infringement Notice does), an addressee field for "Dear …" kept separate from the owner's name
+  printed in the address block, and a tickbox to address the letter to "The occupier of unit"
+  instead of a name.
+- The care-of prefix logic moved to `src/templates/helpers.js` so both templates share it.
 - Rule Infringement Notice: "C/O " is printed in front of the care-of line, so the field takes just
   the name ("Example Property Management"). A value that already starts "C/O" or "C/-" is left as
   typed rather than given a second prefix.
