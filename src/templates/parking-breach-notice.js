@@ -122,8 +122,8 @@ const FIELDS = [
     label: 'Owner email',
     type: 'email',
     section: 'recipient',
-    required: true,
-    placeholder: '[owner email]',
+    required: false,
+    help: 'Leave blank if not known. The "Email to:" line is left out entirely when both this and the property manager email are blank.',
   },
   {
     id: 'pmEmail',
@@ -329,8 +329,14 @@ function careOfLine(values) {
   return text ? paragraph([plain(text)]) : [];
 }
 
+/** The "Email to:" line: the owner's and property manager's emails, space-separated as the
+ *  source's, or left out entirely when neither is known (Matt, 2026-09-22). */
+function emailsLine(values) {
+  const emails = [clean(values.ownerEmail), clean(values.pmEmail)].filter(Boolean);
+  return emails.length ? paragraph([plain(`Email to: ${emails.join(' ')}`)]) : [];
+}
+
 function addressBlock(values) {
-  const emails = [plain('Email to: '), value('ownerEmail', values), ...optionalAfterSpace('pmEmail', values)];
   return [
     // The source's first address line reads "Dear [Owner Name]", repeating the salutation
     // below it; "Dear" is dropped (Matt, 2026-09-21).
@@ -352,7 +358,7 @@ function addressBlock(values) {
       plain(' '),
       value('postcode', values),
     ]),
-    ...paragraph(emails),
+    ...emailsLine(values),
   ];
 }
 

@@ -169,6 +169,15 @@ describe('the email line', () => {
   it('treats a blank property manager email as none', () => {
     expect(emailLine({ pmEmail: '   ' })).toBe('Email to: jane@example.com');
   });
+
+  it('is not required, and left out entirely when blank', () => {
+    expect(missingFields(template, full({ ownerEmail: '' }))).toEqual([]);
+    expect(emailLine({ ownerEmail: '' })).toBeUndefined();
+  });
+
+  it('has the property manager alone when there is no owner email', () => {
+    expect(emailLine({ ownerEmail: '', pmEmail: 'pm@example.com' })).toBe('Email to: pm@example.com');
+  });
 });
 
 describe('the optional parking details', () => {
@@ -311,7 +320,7 @@ describe('unfilled fields', () => {
 
   it('shows no placeholder for an optional field', () => {
     const shown = missingRuns(template.build(defaultValues(template))).map((run) => run.text);
-    for (const id of ['pmEmail', 'parkingDetails', 'observationDetails', 'ruleExcerpt', 'careOf']) {
+    for (const id of ['ownerEmail', 'pmEmail', 'parkingDetails', 'observationDetails', 'ruleExcerpt', 'careOf']) {
       expect(template.fields.find((field) => field.id === id).placeholder, id).toBeUndefined();
     }
     expect(shown).not.toContain('undefined');
@@ -323,9 +332,12 @@ describe('missingFields and describeMissing', () => {
     expect(missingFields(template, full())).toEqual([]);
   });
 
-  it('does not require the property manager, either detail or the rule excerpt', () => {
+  it('does not require either email, either detail or the rule excerpt', () => {
     expect(
-      missingFields(template, full({ pmEmail: '', parkingDetails: '', observationDetails: '', ruleExcerpt: null })),
+      missingFields(
+        template,
+        full({ ownerEmail: '', pmEmail: '', parkingDetails: '', observationDetails: '', ruleExcerpt: null }),
+      ),
     ).toEqual([]);
   });
 

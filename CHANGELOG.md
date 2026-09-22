@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Parking Breach Notice: the owner email is now optional, like the property manager email
+  already was. The "Email to:" line shows whichever of the two are filled in, and is left out
+  entirely when neither is known.
 - Parking Breach Notice: an optional care-of line ("C/O " printed in front, as the Rule
   Infringement Notice does), an addressee field for "Dear …" kept separate from the owner's name
   printed in the address block, and a tickbox to address the letter to "The occupier of unit"
